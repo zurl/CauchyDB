@@ -8,14 +8,59 @@
 
 using namespace std;
 
+class SQLException{
+public:
+    int code;
+    std::string message;
+    SQLException(int code = 0, std::string && message = "")
+            :code(code), message(message){};
+};
+
+class SQLExecuteException: public SQLException{
+public:
+    SQLExecuteException(int code = 0, std::string && message = "")
+            :SQLException(code, message){}
+
+};
+
+class SQLSyntaxException: public SQLException{
+public:
+    SQLSyntaxException(int code = 0, std::string && message = "")
+            :SQLException(code, message){}
+};
+
+class SQLTypeException: public SQLException{
+public:
+    SQLTypeException(int code = 0, std::string && message = "")
+            :SQLException(code, message){}
+};
+
+
 // int char float
 
 class ColumnModel{
 public:
+    enum class Type{
+        Char, Int, Float
+    };
     std::string name;
+    int size;
+    Type type;
     ColumnModel( JSON * config ){
         JSONObject * data = config->toObject();
         name = data->get("name")->asCString();
+        size = (int)data->get("typeSize")->toInteger()->value;
+        const char * typestr = data->get("type")->asCString();
+        if( strcmp(typestr, "int") == 0){
+            type = Type::Int;
+        }
+        else if( strcmp(typestr, "char") == 0){
+            type = Type::Char;
+        }
+        else if( strcmp(typestr, "float") == 0){
+            type = Type::Float;
+        }
+        else throw "fuck type";
     }
 };
 
@@ -29,14 +74,19 @@ class IndexModel{
     }
 };
 
+
+
 class TableModel{
     int fid;
     FileService * fileService;
+    std::string name;
     std::vector<ColumnModel> columns;
     std::vector<IndexModel> indices;
     std::map<std::string, int> keyindex;
     public:
-    TableModel(FileService * fileService, std::string && name, JSON * config){
+    TableModel(FileService * fileService, std::string && name, JSON * config)
+    :name(name)
+    {
         // open file
         this->fileService = fileService;
         fid = fileService->openFile((name + ".cdt").c_str());
@@ -53,6 +103,14 @@ class TableModel{
             indices.emplace_back(fileService, name + "_" + index.first, index.second);
         }
     }
+    ColumnModel * getColumn(int cid){
+        return &columns[cid];
+    }
+    int getColumnIndex(const std::string & str){
+        auto iter = keyindex.find(str);
+        if( iter == keyindex.end()) throw SQLExecuteException(1, "unknown column");
+        return iter->second;
+    }
 };
 
 
@@ -65,6 +123,9 @@ class DataBaseModel{
             tables.emplace(table.first,
              TableModel(fileService, name + "_" + table.first, table.second));
         }
+    }
+    TableModel * getTableByName(std::string && str){
+        return &tables[str];
     }
 };
 
@@ -89,13 +150,54 @@ public:
 // 0 - 7 is header!!
 
 
+class SQLSession{
+    MetaDataService * metaDataService;
+    DataBaseModel * dataBaseModel;
+public:
+    SQLSession(MetaDataService *metaDataService, DataBaseModel *dataBaseModel) : metaDataService(metaDataService),
+                                                                                 dataBaseModel(dataBaseModel){}
+    TableModel * getTable(string && name){
+        if( dataBaseModel == nullptr) return nullptr;
+        return dataBaseModel->getTableByName(name);
+    }
+
+};
+
+class SQLCondition{
+public:
+    enum class Type{
+        gt, lt, gte, lte, eq, neq
+    };
+    Type type;
+    int col;
+    void * value;
+};
+
+class SQLWhereClause{
+    std::vector<SQLCondition *> conds;
+public:
+    void addCondition(SQLCondition * cond){
+        conds.emplace_back(cond);
+    }
+};
+
+class SQLSelectStatement{
+    TableModel * table;
+    std::vector<size_t> columns;
+    SQLWhereClause * where;
+public:
+    SQLSelectStatement(TableModel *table, const vector<std::string> &columns, SQLWhereClause *where) : table(table), where(where) {
+        for(auto & key : columns){
+            this->columns.emplace_back(table->getColumnIndex(key));
+        }
+    }
+};
 
 class SQLParser{
-    MetaDataService * metaDataService;
+    SQLSession * sqlSession;
     const char * str = "select * from student where sage >= 20 and sgender = 'F';";
 public:
-    SQLParser(MetaDataService *metaDataService)
-            : metaDataService(metaDataService) {}
+    SQLParser(SQLSession *sqlSession) : sqlSession(sqlSession) {}
 
     enum class TokenType {
         integer, real, name, string, ope, null, __keyword
@@ -198,25 +300,101 @@ public:
     }
 
 
-    bool tokencmp(Token token, const char * str){
+    bool tokencmp(Token & token, const char * str){
         int len1 = token.end - token.begin + 1;
         int len2 = (int)strlen(str);
         if( len1 != len2 ) return false;
         return strncasecmp(str + token.begin, str, (size_t)len1) == 0;
     }
 
-
-
-    void parseSelectStatement(){
+    SQLWhereClause * parseWhereClause(TableModel * tableModel){
         Token token = tokens[pos];
-        if(str[token.begin] == '*'){
+        SQLWhereClause * sqlWhereClause = new SQLWhereClause();
+        try {
+            while (token.type == TokenType::name) {
+                int cid = tableModel->getColumnIndex(std::string(str, token.begin, token.end - token.begin + 1));
+                SQLCondition::Type type;
+                pos ++; token = tokens[pos]; // col
+                if(tokencmp(token, "<")){
+                    type = SQLCondition::Type::lt;
+                }
+                else if(tokencmp(token, ">")){
+                    type = SQLCondition::Type::gt;
+                }
+                else if(tokencmp(token, ">=")){
+                    type = SQLCondition::Type::gte;
+                }
+                else if(tokencmp(token, "<=")){
+                    type = SQLCondition::Type::lte;
+                }
+                else if(tokencmp(token, "<>")){
+                    type = SQLCondition::Type::neq;
+                }
+                else if(tokencmp(token, "=")){
+                    type = SQLCondition::Type::eq;
+                }
+                else throw new SQLSyntaxException(0, "illegal opes");
+                pos ++; token = tokens[pos]; // op
+                void * data;
+                ColumnModel * columnModel = tableModel->getColumn(cid);
+                if(token.type == TokenType::integer){
+                    if( columnModel->type != ColumnModel:: )
+                    data = new int[1];
+                    sscanf(str + token.begin, "%d", data);
+                }
+                else if(token.type == TokenType::string){
+                    int len = token.end - token.begin + 1;
+                    data = new char[len + 1];
+                    memcpy(data, str + token.begin, len);
+                    ((char *)data)[len] = 0;
+                }
+                else if(token.type == TokenType::real){
+                    data = new double[1];
+                    sscanf(str + token.begin, "%lf", data);
+                }
+                else throw new SQLSyntaxException(0, "illegal operand");
+                return new SQLCondition(cid, type, data)
+            }
+        }catch(SQLException e){
+            delete sqlWhereClause;
+            throw e;
+        }
+    }
 
+    SQLSelectStatement *  parseSelectStatement(){
+        Token token = tokens[pos];
+        std::vector<std::string> columns;
+        bool ok = false;
+        if(str[token.begin] == '*'){
+            pos ++; token = tokens[pos];
+            if(tokencmp(token, "FROM")){ok = true;}
+            else throw SQLSyntaxException(2, "syntax error");
         }
         else{
             while(token.type == TokenType::name){
+                columns.emplace_back(str, token.begin, token.end - token.begin + 1);
+                pos ++; token = tokens[pos];
+                if(tokencmp(token, "FROM")){ok = true; break;}
+                if(str[token.begin] != ',') throw SQLSyntaxException(2, "syntax error");
+                pos ++; token = tokens[pos];
+            }
+            if(!ok)throw SQLSyntaxException(2, "syntax error");
+        }
+        pos ++; token = tokens[pos];//FROM
+        TableModel * table = sqlSession->getTable(std::string(str, token.begin, token.end - token.begin + 1));
+        SQLWhereClause * where = nullptr;
+        pos ++; token = tokens[pos];//tableName
+        while(str[token.begin] != ';') {
+            if (tokencmp(token, "WHERE")) {
+                where = parseWhereClause(table);
+            } else if (tokencmp(token, "ORDER")) {
 
+            } else {
+                if (where != nullptr) delete where;
+                throw SQLSyntaxException(2, "syntax error");
             }
         }
+        return new SQLSelectStatement(table, columns, where);
     }
 
     void parseSQLStatement(){
@@ -256,18 +434,8 @@ public:
 
     size_t findOne(void * key){
         //fuck everyone
-
     }
 };
-
-class SQLSyntaxException{
-    int code;
-    std::string message;
-public:
-    SQLSyntaxException(int code = 0, std::string && message = "")
-            :code(code), message(message){};
-};
-
 
 /*
  * a>=35 && a<=35
@@ -298,7 +466,6 @@ public:
     FileService * fileService;
     MetaDataService * metaDataService;
     RecordService * recordService;
-    SQLParser * sqlParser;
     ApplicationContainer(){}
     ~ApplicationContainer(){
         delete blockService;
@@ -320,7 +487,11 @@ public:
         metaDataService = new MetaDataService(fileService);
         blockService = new BlockService(fileService);
         recordService = new RecordService(blockService);
-        sqlParser = new SQLParser(metaDataService);
+    }
+
+    void testSQL(){
+        auto session = new SQLSession(metaDataService, nullptr);
+        auto parser = new SQLParser(session);
     }
 
 #define __fo(x) ((x) / BLOCK_SIZE )
