@@ -1,0 +1,440 @@
+
+#include "Common.h"
+#include "FileService.h"
+#include "BlockService.h"
+#include "BPlusTree.h"
+#include "Configuration.h"
+#include "RecordService.h"
+
+using namespace std;
+
+// int char float
+
+class ColumnModel{
+public:
+    std::string name;
+    ColumnModel( JSON * config ){
+        JSONObject * data = config->toObject();
+        name = data->get("name")->asCString();
+    }
+};
+
+class IndexModel{
+    int fid;
+    FileService * fileService;
+    public:
+    IndexModel(FileService * fileService, std::string && name, JSON * config){
+        this->fileService = fileService;
+        fid = fileService->openFile((name + ".cdi").c_str());
+    }
+};
+
+class TableModel{
+    int fid;
+    FileService * fileService;
+    std::vector<ColumnModel> columns;
+    std::vector<IndexModel> indices;
+    std::map<std::string, int> keyindex;
+    public:
+    TableModel(FileService * fileService, std::string && name, JSON * config){
+        // open file
+        this->fileService = fileService;
+        fid = fileService->openFile((name + ".cdt").c_str());
+        JSONArray * data = config->get("columns")->toArray();
+        for(auto & column: data->elements){
+            columns.emplace_back(column);
+        }
+        // build fast search keyindex
+        for(int i = 0; i < columns.size(); i++){
+            keyindex.emplace(columns[i].name, i);
+        }
+        JSONObject * jarr = config->get("indices")->toObject();
+        for(auto & index : jarr->hashMap){
+            indices.emplace_back(fileService, name + "_" + index.first, index.second);
+        }
+    }
+};
+
+
+class DataBaseModel{
+    std::map<std::string, TableModel> tables;
+    public:
+    DataBaseModel(FileService * fileService, const std::string & name, JSON * config){
+        JSONObject * data = config->get("tables")->toObject();
+        for(auto & table: data->hashMap){
+            tables.emplace(table.first,
+             TableModel(fileService, name + "_" + table.first, table.second));
+        }
+    }
+};
+
+class MetaDataService{
+    FileService * fileService;
+    JSON * data;
+    std::map<std::string, DataBaseModel> dataBases;
+public:
+    MetaDataService(FileService * fileService)
+        :fileService(fileService){
+        data = JSON::fromFile(Configuration::attrCString("meta_file_path"));
+        // Load All DataBases
+        JSONObject * dbs = data->get("databases")->toObject();
+        for(auto & db: dbs->hashMap){
+            dataBases.emplace(db.first, DataBaseModel(fileService, db.first, db.second));
+        }
+    }
+};
+// [nullptr][ ][ ][ ][ ]
+// 0->full
+
+// 0 - 7 is header!!
+
+
+
+class SQLParser{
+    MetaDataService * metaDataService;
+    const char * str = "select * from student where sage >= 20 and sgender = 'F';";
+public:
+    SQLParser(MetaDataService *metaDataService)
+            : metaDataService(metaDataService) {}
+
+    enum class TokenType {
+        integer, real, name, string, ope, null, __keyword
+    };
+    struct Token {
+        int begin, end;
+        TokenType type;
+        Token(int begin_,int end_, TokenType type_)
+                :begin(begin_),end(end_),type(type_){}
+    };
+    std::vector<Token> tokens;
+    size_t pos = 0;
+
+    inline bool isNum(char x) {
+        return x >= '0' && x <= '9';
+    }
+    inline bool isChar(char x) {
+        return (x >= 'a' && x <= 'z') || (x >= 'A' && x <='Z');
+    }
+    void tokenize() {
+        TokenType status = TokenType::null;
+        int saved_pos = 0;
+        for (int i = 0; str[i] != 0; i++) {
+            switch (status) {
+                case TokenType::null:
+                    if (str[i] == '\'' || str[i] == '\"') {
+                        status = TokenType::string;
+                    }
+                    else if (str[i] == '`') {
+                        status = TokenType::name;
+                    }
+                    else if (isNum(str[i]) || str[i] == '-') {
+                        status = TokenType::integer;
+                    }
+                    else if (isChar(str[i])) {
+                        status = TokenType::__keyword;
+                    }
+                    else if (str[i] == ' ' || str[i] == '\t' || str[i] == '\n' || str[i] == '\r') {
+                        break;
+                    }
+                    else {
+                        int st = i;
+                        if (str[i] == '!' && str[i + 1] == '=') {
+                            i++;
+                        }
+                        else if (str[i] == '<' && str[i + 1] == '>') {
+                            i++;
+                        }
+                        else if (str[i] == '<' && str[i + 1] == '=') {
+                            i++;
+                        }
+                        else if (str[i] == '>' && str[i + 1] == '=') {
+                            i++;
+                        }
+                        tokens.emplace_back(st, i, TokenType::ope);
+                        break;
+                    }
+                    saved_pos = i;
+                    break;
+                case TokenType::string:
+                    if ((str[i] == '\"' || str[i] == '\'') && str[i - 1] != '\\') {
+                        tokens.emplace_back(saved_pos + 1, i - 1, TokenType::string);
+                        status = TokenType::null;
+                    }break;
+                case TokenType::name:
+                    if (str[i] == '`'  && str[i - 1] != '\\') {
+                        tokens.emplace_back(saved_pos, i, TokenType::string);
+                        status = TokenType::null;
+                    }
+                    break;
+                case TokenType::integer:
+                    if (str[i] == '.' || str[i] == 'e') {
+                        status = TokenType::real;
+                        if (str[i] == 'e' && str[i] == '-')i++;
+                        break;
+                    }
+                    if (!isNum(str[i])) {
+                        tokens.emplace_back(saved_pos, i - 1, TokenType::integer);
+                        status = TokenType::null;
+                        i--;
+                    }
+                    break;
+                case TokenType::real:
+                    if (!isNum(str[i])) {
+                        tokens.emplace_back(saved_pos, i - 1, TokenType::real);
+                        status = TokenType::null;
+                        i--;
+                    }
+                    break;
+                case TokenType::__keyword:
+                    if (!isChar(str[i])) {
+                        tokens.emplace_back(saved_pos, i, TokenType::name);
+                        status = TokenType::null;
+                        i--;
+                    }
+                    break;
+                case TokenType::ope:break;
+            }
+        }
+    }
+
+
+    bool tokencmp(Token token, const char * str){
+        int len1 = token.end - token.begin + 1;
+        int len2 = (int)strlen(str);
+        if( len1 != len2 ) return false;
+        return strncasecmp(str + token.begin, str, (size_t)len1) == 0;
+    }
+
+
+
+    void parseSelectStatement(){
+        Token token = tokens[pos];
+        if(str[token.begin] == '*'){
+
+        }
+        else{
+            while(token.type == TokenType::name){
+
+            }
+        }
+    }
+
+    void parseSQLStatement(){
+        pos = 0;
+        int len = tokens[pos].end - tokens[pos].begin + 1;
+        Token token = tokens[pos]; pos ++;
+        if( len == 6){
+            if(tokencmp(token, "select")){
+                parseSelectStatement();
+            }
+            else if( tokencmp(token, "delete")){
+
+            }
+            else if( tokencmp(token, "insert")){
+
+            }
+            else if( tokencmp(token, "create")){
+
+            }
+            else{
+                throw SQLSyntaxException(0, "keyword error");
+            }
+        }
+        else{
+            throw SQLSyntaxException(0, "keyword error");
+        }
+    }
+
+};
+
+
+class TableFacade{
+    BlockService * blockService;
+public:
+    TableFacade(BlockService * blockService)
+    :blockService(blockService){}
+
+    size_t findOne(void * key){
+        //fuck everyone
+
+    }
+};
+
+class SQLSyntaxException{
+    int code;
+    std::string message;
+public:
+    SQLSyntaxException(int code = 0, std::string && message = "")
+            :code(code), message(message){};
+};
+
+
+/*
+ * a>=35 && a<=35
+ * SQL => QueryPlan
+ * QueryPlan
+ * type => select
+ * front => linear / index
+ *      index: { on : "primiary", "
+ *
+ *
+ */
+
+class IndexFacade{
+    BlockService * blockService;
+public:
+    IndexFacade(BlockService * blockService)
+        :blockService(blockService){}
+    size_t selectEqual(int fid, void * key, size_t len);
+    //IndexIterator * selectRange(int fid, bool leftEq, bool rightEq, void * left, void * right, size_t len);
+
+    void insert(int fid, void * key, size_t len, size_t value);
+    void remove(int fid, void * key, size_t len);
+};
+
+class ApplicationContainer{
+public:
+    BlockService * blockService;
+    FileService * fileService;
+    MetaDataService * metaDataService;
+    RecordService * recordService;
+    SQLParser * sqlParser;
+    ApplicationContainer(){}
+    ~ApplicationContainer(){
+        delete blockService;
+        delete fileService;
+        delete metaDataService;
+        delete recordService;
+    }
+    void start(){
+        // The bootstrap persedure of IoC Container:
+        // Initial Configuration Singleton
+        // Load FileService
+        // Load MetaDataService { Register File => FileService }
+        // Load BlockService { Inject FileService }
+        // Load QueryRunnerService{ Inject BlockService }
+        // Load QueryBuilderSerice { Inject QueryRunnerService }
+        // Load SQLInterpreterService { Inject QueryBuilderSerice }
+        Configuration::initialize();
+        fileService = new FileService();
+        metaDataService = new MetaDataService(fileService);
+        blockService = new BlockService(fileService);
+        recordService = new RecordService(blockService);
+        sqlParser = new SQLParser(metaDataService);
+    }
+
+#define __fo(x) ((x) / BLOCK_SIZE )
+#define __bo(x) ((x) % BLOCK_SIZE )
+
+    void testRecord(int fid){
+        char buffer[BLOCK_SIZE];
+        buffer[0] = 'a';
+        buffer[1] = 'v';
+        buffer[2] = 0;
+        auto a = recordService->insert(fid, buffer, 8);
+        buffer[1] = '1';
+        auto b = recordService->insert(fid, buffer, 8);
+        buffer[1] = '2';
+        auto c = recordService->insert(fid, buffer, 8);
+        buffer[1] = '3';
+        auto d = recordService->insert(fid, buffer, 8);
+        printf("read from record 0 %s\n", recordService->read(fid, __fo(a),__bo(a), 8));
+        printf("read from record 1 %s\n", recordService->read(fid, __fo(b),__bo(b), 8));
+        printf("read from record 2 %s\n", recordService->read(fid, __fo(c),__bo(c), 8));
+        printf("read from record 3 %s\n", recordService->read(fid, __fo(d),__bo(d), 8));
+        recordService->write(fid, 0, 8, buffer, 8);
+        //recordFacade->remove(fid, 16, 8);
+        for(int i = 0; i<= 50; i++){
+            printf("read from record %d %s\n",
+                   i,
+                   recordService->read(fid,__fo(i * 8), __bo(i * 8), 8));
+        }
+    }
+    void testFile(){
+        int fid = fileService->openFile("aes.jb");
+        printf("open file: fid = %d\n", fid);
+        size_t offset = fileService->allocBlock(fid);
+        printf("alloc block at offset = %d\n", (int) offset);
+        char * data = new char[BLOCK_SIZE];
+        data[0] = 'a';
+        data[1] = 'b';
+        data[2] = 0;
+        fileService->writeBlock(fid, offset, (void *)data);
+        printf("write block with str = %s\n", data);
+        char * out = (char *)fileService->readBlock(fid, offset);
+        printf("read block with str = %s\n", out);
+        delete[] out;
+        delete[] data;
+    }
+    void testBlockSr(int fid){
+        size_t offset = blockService->allocBlock(fid);
+        BlockItem * blk = blockService->getBlock(fid, offset);
+        char * data = (char * )blk->value;
+        data[0] = 'a';
+        data[1] = 'b';
+        blk->modified = 1;
+        blk = blockService->getBlock(fid, offset);
+        blk = blockService->getBlock(fid, offset);
+        blk = blockService->getBlock(fid, offset);
+        blk = blockService->getBlock(fid, offset);
+        blk = blockService->getBlock(fid, offset);
+
+    }
+    void testBlock(){
+        int fid = fileService->openFile("aes.jb");
+        for(int i=1;i<=20; i++)testBlockSr(fid);
+    }
+};
+
+//const int NODE_SIZE = 5;
+//const int NODE_SIZE_HALF = (NODE_SIZE + 1) / 2; // 2
+// 4 bytes (int) 4 bytes(float) 4 bytes char???fucking fuck
+// NODE_SIZE_EQU ::=
+// NODE_SIZE = (BLOCK_SIZE - 8 ) / ( key_type_size );
+// 2 bytes size + 2 bytes isLeaf
+// 8 bytes int, 8 bytes long, 16 bytes char, 64 bytes, 256 bytes
+#include <sstream>
+const char * itos(int i){
+    char * buffer = new char[36];
+    ostringstream os;
+    os << i;
+    strcpy(buffer, os.str().c_str());
+    return buffer;
+}
+
+
+
+
+
+//BPlusTree<char[16]> bPlusTree;
+//int main(){
+//    bPlusTree.T_BPLUS_TEST();
+//    return 0;
+//}
+//
+//
+//int main2(){
+//    tokenize();
+//    for(auto & x : tokens){
+//        for(int i = x.begin; i <= x.end; i++)putchar(str[i]);
+//        printf("\n");
+//    }
+//    return 0;
+//}
+
+int main(){
+    ApplicationContainer applicationIoCContainer;
+    applicationIoCContainer.start();
+//    int fid = applicationIoCContainer.fileService->openFile("test.idx");
+//    BPlusTree<char[16]> bPlusTree(applicationIoCContainer.blockService, fid);
+//    bPlusTree.T_BPLUS_TEST();
+    //applicationIoCContainer.testBlock();
+    //applicationIoCContainer.testRecord(fid);
+    return 0;
+}
+
+/** 
+
+    metablock datablock
+
+**/ 
