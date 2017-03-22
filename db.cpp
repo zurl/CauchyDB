@@ -652,17 +652,57 @@ int main(){
 }
 
 class QueryScanner{
+protected:
+    RecordService * recordService;
+    BlockService * blockService;
+public:
+    QueryScanner(RecordService *recordService, BlockService *blockService) : recordService(recordService),
+                                                                             blockService(blockService) {}
 
+    virtual void scan( std::function<void(size_t, size_t)> consumer) = 0;
 };
 
 class LinearQueryScanner : public QueryScanner{
-
+    int fid;
+public:
+    LinearQueryScanner(RecordService *recordService, BlockService *blockService, int fid) : QueryScanner(recordService,
+                                                                                                             blockService),
+                                                                                            fid(fid) {}
+    
 };
 
-class IndexQueryScanner : public QueryScanner{
+template <typename T>
+class OneIndexQueryScanner : public QueryScanner{
+    int ifid;
+    int tfid;
+    T value;
+public:
+    OneIndexQueryScanner(RecordService *recordService, BlockService *blockService, int ifid, int tfid, T value)
+            : QueryScanner(recordService, blockService), ifid(ifid), tfid(tfid), value(value) {}
 
+    void scan(std::function<void(size_t, size_t)> consumer) override {
+        BPlusTree<T> bPlusTree(blockService, ifid);
+        size_t ptr = bPlusTree.findOne(value);
+        if(ptr != 0) consumer(1, ptr);
+    }
 };
 
+template <typename T>
+class RangeIndexQueryScanner : public QueryScanner{
+    int ifid;
+    int tfid;
+    T left, right;
+    bool leq, req;
+public:
+    RangeIndexQueryScanner(RecordService *recordService, BlockService *blockService, int ifid, int tfid, T left,
+                           T right, bool leq, bool req) : QueryScanner(recordService, blockService), ifid(ifid),
+                                                          tfid(tfid), left(left), right(right), leq(leq), req(req) {}
+
+    void scan(std::function<void(size_t, size_t)> consumer) override {
+        BPlusTree<T> bPlusTree(blockService, ifid);
+        bPlusTree.findByRange(left, leq, right, req, consumer);
+    }
+};
 
 
 
