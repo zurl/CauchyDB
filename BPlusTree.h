@@ -39,10 +39,16 @@ public:
         strcpy(a, b);
     }
     static int cmp(Type a, Type b){
-        return strcmp((const char *)a, (const char *)b);
+        int ret = strcmp((const char *)a, (const char *)b);
+        if ( ret > 0) return 1;
+        if ( ret == 0) return 0;
+        return -1;
     }
     static int cmp(Type a, const char * b){
-        return strcmp((const char *)a, b);
+        int ret = strcmp((const char *)a, b);
+        if ( ret > 0) return 1;
+        if ( ret == 0) return 0;
+        return -1;
     }
 };
 

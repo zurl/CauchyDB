@@ -5,6 +5,7 @@
 #include "BPlusTree.h"
 #include "Configuration.h"
 #include "RecordService.h"
+#include "QueryFilter.h"
 
 using namespace std;
 
@@ -19,20 +20,20 @@ public:
 class SQLExecuteException: public SQLException{
 public:
     SQLExecuteException(int code = 0, std::string && message = "")
-            :SQLException(code, message){}
+            :SQLException(code, std::move(message)){}
 
 };
 
 class SQLSyntaxException: public SQLException{
 public:
     SQLSyntaxException(int code = 0, std::string && message = "")
-            :SQLException(code, message){}
+            :SQLException(code, std::move(message)){}
 };
 
 class SQLTypeException: public SQLException{
 public:
     SQLTypeException(int code = 0, std::string && message = "")
-            :SQLException(code, message){}
+            :SQLException(code, std::move(message)){}
 };
 
 
@@ -49,7 +50,7 @@ public:
     ColumnModel( JSON * config ){
         JSONObject * data = config->toObject();
         name = data->get("name")->asCString();
-        size = (int)data->get("typeSize")->toInteger()->value;
+        size = (int)(data->get("typeSize")->toInteger()->value);
         const char * typestr = data->get("type")->asCString();
         if( strcmp(typestr, "int") == 0){
             type = Type::Int;
@@ -115,32 +116,45 @@ class TableModel{
 
 
 class DataBaseModel{
-    std::map<std::string, TableModel> tables;
+    std::map<std::string, TableModel * > tables;
     public:
     DataBaseModel(FileService * fileService, const std::string & name, JSON * config){
         JSONObject * data = config->get("tables")->toObject();
         for(auto & table: data->hashMap){
             tables.emplace(table.first,
-             TableModel(fileService, name + "_" + table.first, table.second));
+             new TableModel(fileService, name + "_" + table.first, table.second));
         }
     }
-    TableModel * getTableByName(std::string && str){
-        return &tables[str];
+    ~DataBaseModel(){
+        for( auto & x : tables){
+            delete x.second;
+        }
+    }
+    TableModel * getTableByName(const std::string & str){
+        return tables[str];
     }
 };
 
 class MetaDataService{
     FileService * fileService;
     JSON * data;
-    std::map<std::string, DataBaseModel> dataBases;
+    std::map<std::string, DataBaseModel *> dataBases;
 public:
+    ~MetaDataService(){
+        for( auto & x: dataBases){
+            delete x.second;
+        }
+    }
+    DataBaseModel * getDataBase(const string & name){
+        return dataBases[name];
+    }
     MetaDataService(FileService * fileService)
         :fileService(fileService){
         data = JSON::fromFile(Configuration::attrCString("meta_file_path"));
         // Load All DataBases
         JSONObject * dbs = data->get("databases")->toObject();
         for(auto & db: dbs->hashMap){
-            dataBases.emplace(db.first, DataBaseModel(fileService, db.first, db.second));
+            dataBases.emplace(db.first, new DataBaseModel(fileService, db.first, db.second));
         }
     }
 };
@@ -156,10 +170,18 @@ class SQLSession{
 public:
     SQLSession(MetaDataService *metaDataService, DataBaseModel *dataBaseModel) : metaDataService(metaDataService),
                                                                                  dataBaseModel(dataBaseModel){}
-    TableModel * getTable(string && name){
+
+    void loadTable(const string & name){
+        dataBaseModel = metaDataService->getDataBase(name);
+    }
+    TableModel * getTable(const string & name){
         if( dataBaseModel == nullptr) return nullptr;
         return dataBaseModel->getTableByName(name);
     }
+
+};
+
+class SQLStatement{
 
 };
 
@@ -171,6 +193,8 @@ public:
     Type type;
     int col;
     void * value;
+
+    SQLCondition(Type type, int col, void *value) : type(type), col(col), value(value) {}
 };
 
 class SQLWhereClause{
@@ -181,7 +205,7 @@ public:
     }
 };
 
-class SQLSelectStatement{
+class SQLSelectStatement : public SQLStatement{
     TableModel * table;
     std::vector<size_t> columns;
     SQLWhereClause * where;
@@ -195,7 +219,7 @@ public:
 
 class SQLParser{
     SQLSession * sqlSession;
-    const char * str = "select * from student where sage >= 20 and sgender = 'F';";
+    const char * str = "select * from test where id >= 20 and value = 'F';";
 public:
     SQLParser(SQLSession *sqlSession) : sqlSession(sqlSession) {}
 
@@ -264,7 +288,7 @@ public:
                     }break;
                 case TokenType::name:
                     if (str[i] == '`'  && str[i - 1] != '\\') {
-                        tokens.emplace_back(saved_pos, i, TokenType::string);
+                        tokens.emplace_back(saved_pos, i - 1, TokenType::string);
                         status = TokenType::null;
                     }
                     break;
@@ -289,7 +313,7 @@ public:
                     break;
                 case TokenType::__keyword:
                     if (!isChar(str[i])) {
-                        tokens.emplace_back(saved_pos, i, TokenType::name);
+                        tokens.emplace_back(saved_pos, i - 1, TokenType::name);
                         status = TokenType::null;
                         i--;
                     }
@@ -300,11 +324,11 @@ public:
     }
 
 
-    bool tokencmp(Token & token, const char * str){
+    bool tokencmp(Token & token, const char * target){
         int len1 = token.end - token.begin + 1;
-        int len2 = (int)strlen(str);
+        int len2 = (int)strlen(target);
         if( len1 != len2 ) return false;
-        return strncasecmp(str + token.begin, str, (size_t)len1) == 0;
+        return strncasecmp(str + token.begin, target, (size_t)len1) == 0;
     }
 
     SQLWhereClause * parseWhereClause(TableModel * tableModel){
@@ -338,23 +362,29 @@ public:
                 void * data;
                 ColumnModel * columnModel = tableModel->getColumn(cid);
                 if(token.type == TokenType::integer){
-                    if( columnModel->type != ColumnModel:: )
+                    if( columnModel->type != ColumnModel::Type::Int ) throw SQLTypeException(3, "type error");
                     data = new int[1];
                     sscanf(str + token.begin, "%d", data);
                 }
                 else if(token.type == TokenType::string){
-                    int len = token.end - token.begin + 1;
+                    if( columnModel->type != ColumnModel::Type::Char ) throw SQLTypeException(3, "type error");
+                    int len = columnModel->size;
                     data = new char[len + 1];
                     memcpy(data, str + token.begin, len);
                     ((char *)data)[len] = 0;
                 }
                 else if(token.type == TokenType::real){
+                    if( columnModel->type != ColumnModel::Type::Float ) throw SQLTypeException(3, "type error");
                     data = new double[1];
                     sscanf(str + token.begin, "%lf", data);
                 }
                 else throw new SQLSyntaxException(0, "illegal operand");
-                return new SQLCondition(cid, type, data)
+                sqlWhereClause->addCondition(new SQLCondition(type, cid, data));
+                pos ++; token = tokens[pos]; // imm
+                if(!tokencmp(token, "and")) break;
+                pos ++; token = tokens[pos]; // and
             }
+            return sqlWhereClause;
         }catch(SQLException e){
             delete sqlWhereClause;
             throw e;
@@ -367,7 +397,7 @@ public:
         bool ok = false;
         if(str[token.begin] == '*'){
             pos ++; token = tokens[pos];
-            if(tokencmp(token, "FROM")){ok = true;}
+            if(tokencmp(token, "from")){ok = true;}
             else throw SQLSyntaxException(2, "syntax error");
         }
         else{
@@ -386,24 +416,25 @@ public:
         pos ++; token = tokens[pos];//tableName
         while(str[token.begin] != ';') {
             if (tokencmp(token, "WHERE")) {
-                where = parseWhereClause(table);
+                pos ++; where = parseWhereClause(table);
             } else if (tokencmp(token, "ORDER")) {
 
             } else {
                 if (where != nullptr) delete where;
                 throw SQLSyntaxException(2, "syntax error");
             }
+            token = tokens[pos];
         }
         return new SQLSelectStatement(table, columns, where);
     }
 
-    void parseSQLStatement(){
+    SQLStatement * parseSQLStatement(){
         pos = 0;
         int len = tokens[pos].end - tokens[pos].begin + 1;
-        Token token = tokens[pos]; pos ++;
+        Token token = tokens[pos];pos++;
         if( len == 6){
             if(tokencmp(token, "select")){
-                parseSelectStatement();
+                return parseSelectStatement();
             }
             else if( tokencmp(token, "delete")){
 
@@ -420,6 +451,17 @@ public:
         }
         else{
             throw SQLSyntaxException(0, "keyword error");
+        }
+        return nullptr;
+    }
+
+    void test(){
+        for(auto & x: tokens){
+            for(int i = x.begin; i<= x.end; i++){
+                putchar(str[i]);
+            }
+            printf("%d\n", x.end - x.begin + 1);
+
         }
     }
 
@@ -491,7 +533,11 @@ public:
 
     void testSQL(){
         auto session = new SQLSession(metaDataService, nullptr);
+        session->loadTable("test");
         auto parser = new SQLParser(session);
+        parser->tokenize();
+        parser->test();
+        auto sql = parser->parseSQLStatement();
     }
 
 #define __fo(x) ((x) / BLOCK_SIZE )
@@ -596,6 +642,7 @@ const char * itos(int i){
 int main(){
     ApplicationContainer applicationIoCContainer;
     applicationIoCContainer.start();
+    applicationIoCContainer.testSQL();
 //    int fid = applicationIoCContainer.fileService->openFile("test.idx");
 //    BPlusTree<char[16]> bPlusTree(applicationIoCContainer.blockService, fid);
 //    bPlusTree.T_BPLUS_TEST();
@@ -603,6 +650,83 @@ int main(){
     //applicationIoCContainer.testRecord(fid);
     return 0;
 }
+
+class QueryScanner{
+
+};
+
+class LinearQueryScanner : public QueryScanner{
+
+};
+
+class IndexQueryScanner : public QueryScanner{
+
+};
+
+
+
+
+class QueryProjection {
+protected:
+    int st;
+    std::string name;
+public:
+    QueryProjection(int st, const string &name) : st(st), name(name) {}
+
+    virtual std::string project(void * data) = 0;
+};
+
+class IntegerQueryProjection: public QueryProjection{
+public:
+
+    IntegerQueryProjection(int st, const string &name) : QueryProjection(st, name) {}
+
+    std::string project(void * data) override {
+        char str[64];
+        sprintf(str,"%d", *(int *)(((char*)data) + st));
+        return std::string(str);
+    }
+};
+
+class CharQueryProjection:public QueryProjection{
+    int len;
+public:
+    CharQueryProjection(int st, const string &name, int len) : QueryProjection(st, name), len(len) {}
+
+    string project(void * data) override {
+        return std::string((char *)data, st,  len);
+    }
+};
+
+class FloatQueryProjection: public QueryProjection{
+public:
+    FloatQueryProjection(int st, const string &name) : QueryProjection(st, name) {}
+
+    string project(void * data) override {
+        char str[64];
+        sprintf(str,"%.3lf", *(double *)(((char*)data) + st));
+        return std::string(str);
+    }
+};
+
+
+
+class QueryPlan{
+
+};
+
+class SelectQueryPlan: public SelectQueryPlan{
+    QueryScanner * queryScanner;
+    QueryFilter * queryFilter;
+    std::vector<QueryProjection *> queryProjections;
+public:
+    SelectQueryPlan(QueryScanner *queryScanner, QueryFilter *queryFilter,
+                    const vector<QueryProjection *> &queryProjections) : queryScanner(queryScanner),
+                                                                         queryFilter(queryFilter),
+                                                                         queryProjections(queryProjections) {}
+
+};
+
 
 /** 
 
