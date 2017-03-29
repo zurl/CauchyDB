@@ -12,7 +12,10 @@ int FileService::openFile(const char * fileName){
     FILE * fp = fopen(fileName,"rb+");
     if( fp == NULL ) return -1;
     files.emplace_back(fp);
-    return (int)(files.size()) - 1;
+    fseek(fp, 0, SEEK_END);
+    int fid = (int)(files.size()) - 1;
+    fileBlockCnt.push_back((size_t)ftell(fp) / BLOCK_SIZE);
+    return fid;
 }
 FILE * FileService::getFile(int fileID){
     assert(fileID < files.size() && fileID >= 0);
@@ -25,6 +28,7 @@ size_t FileService::allocBlock(int fileID){
     size_t offset = (size_t)ftell(fp);
     fwrite(zeroBuffer, BLOCK_SIZE, 1,  fp);
     fflush(fp);
+    fileBlockCnt[fileID] ++;
     return offset / BLOCK_SIZE;
 }
 void FileService::writeBlock(int fileID, size_t startOffset, void * data){
@@ -36,9 +40,7 @@ void FileService::writeBlock(int fileID, size_t startOffset, void * data){
 }
 size_t FileService::getBlockCnt(int fileID){
     assert(fileID < files.size());
-    FILE * fp = files[fileID];
-    fseek(fp, 0, SEEK_END);
-    return ((size_t)ftell(fp) / BLOCK_SIZE);
+    return fileBlockCnt[fileID];
 }
 void * FileService::readBlock(int fileID, size_t startOffset){
     assert(fileID < files.size());

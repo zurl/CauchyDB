@@ -82,7 +82,7 @@ BlockItem * BlockService::getBlock(int fid, size_t offset){
         //printf("@@ item fid=%d blk=%d v[0]=%s v[1]=%s\n",item->fid, item->offset, tmp->v[0], tmp->v[1]);
         if( item->fid == fid && item->offset == offset){
             item->flag++;
-            if( item->flag == 2){
+            if( item->flag == LRU_K_VALUE){
                 cacheQueue.push_front(item);
                 accessQueue.erase(iter);
             }

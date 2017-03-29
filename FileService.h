@@ -9,6 +9,7 @@
 
 class FileService{
     std::vector<FILE *> files;
+    std::vector<size_t> fileBlockCnt;
 public:
     FileService();
     FileService(const FileService & ) = delete;

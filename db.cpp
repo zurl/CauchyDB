@@ -6,6 +6,12 @@
 #include "Configuration.h"
 #include "RecordService.h"
 #include "QueryFilter.h"
+#include "QueryScanner.h"
+#include "LinearQueryScanner.h"
+#include "OneIndexQueryScanner.h"
+#include "ColumnModel.h"
+#include "RangeIndexQueryScannerFactory.h"
+#include "OneIndexQueryScannerFactory.h"
 
 using namespace std;
 
@@ -39,31 +45,7 @@ public:
 
 // int char float
 
-class ColumnModel{
-public:
-    enum class Type{
-        Char, Int, Float
-    };
-    std::string name;
-    int size;
-    Type type;
-    ColumnModel( JSON * config ){
-        JSONObject * data = config->toObject();
-        name = data->get("name")->asCString();
-        size = (int)(data->get("typeSize")->toInteger()->value);
-        const char * typestr = data->get("type")->asCString();
-        if( strcmp(typestr, "int") == 0){
-            type = Type::Int;
-        }
-        else if( strcmp(typestr, "char") == 0){
-            type = Type::Char;
-        }
-        else if( strcmp(typestr, "float") == 0){
-            type = Type::Float;
-        }
-        else throw "fuck type";
-    }
-};
+
 
 class IndexModel{
     int fid;
@@ -72,6 +54,10 @@ class IndexModel{
     IndexModel(FileService * fileService, std::string && name, JSON * config){
         this->fileService = fileService;
         fid = fileService->openFile((name + ".cdi").c_str());
+    }
+
+    int getFid() const {
+        return fid;
     }
 };
 
@@ -82,7 +68,7 @@ class TableModel{
     FileService * fileService;
     std::string name;
     std::vector<ColumnModel> columns;
-    std::vector<IndexModel> indices;
+    std::map<int, IndexModel> indices;
     std::map<std::string, int> keyindex;
     public:
     TableModel(FileService * fileService, std::string && name, JSON * config)
@@ -97,17 +83,33 @@ class TableModel{
         }
         // build fast search keyindex
         for(int i = 0; i < columns.size(); i++){
-            keyindex.emplace(columns[i].name, i);
+            keyindex.emplace(columns[i].getName(), i);
         }
         JSONObject * jarr = config->get("indices")->toObject();
         for(auto & index : jarr->hashMap){
-            indices.emplace_back(fileService, name + "_" + index.first, index.second);
+            indices.emplace(
+                    std::piecewise_construct,
+                    std::forward_as_tuple(keyindex[index.second->get("on")->asCString()]),
+                    std::forward_as_tuple(fileService, name + "_" + index.first, index.second)
+            );
         }
     }
-    ColumnModel * getColumn(int cid){
+
+    IndexModel * findIndexOn(int cid) const {
+        auto iter = indices.find(cid);
+        if(iter == indices.end())return nullptr;
+        else return &iter->second;
+    }
+
+    ColumnModel * getColumn(int cid) const {
         return &columns[cid];
     }
-    int getColumnIndex(const std::string & str){
+
+    int getFid() const {
+        return fid;
+    }
+
+    int getColumnIndex(const std::string & str) const {
         auto iter = keyindex.find(str);
         if( iter == keyindex.end()) throw SQLExecuteException(1, "unknown column");
         return iter->second;
@@ -167,9 +169,20 @@ public:
 class SQLSession{
     MetaDataService * metaDataService;
     DataBaseModel * dataBaseModel;
+    RecordService * recordService;
+    BlockService * blockService;
 public:
-    SQLSession(MetaDataService *metaDataService, DataBaseModel *dataBaseModel) : metaDataService(metaDataService),
-                                                                                 dataBaseModel(dataBaseModel){}
+    SQLSession(MetaDataService *metaDataService, DataBaseModel *dataBaseModel, RecordService *recordService,
+               BlockService *blockService) : metaDataService(metaDataService), dataBaseModel(dataBaseModel),
+                                             recordService(recordService), blockService(blockService) {}
+
+    RecordService *getRecordService() const {
+        return recordService;
+    }
+
+    BlockService *getBlockService() const {
+        return blockService;
+    }
 
     void loadTable(const string & name){
         dataBaseModel = metaDataService->getDataBase(name);
@@ -191,10 +204,9 @@ public:
         gt, lt, gte, lte, eq, neq
     };
     Type type;
-    int col;
+    int cid;
     void * value;
-
-    SQLCondition(Type type, int col, void *value) : type(type), col(col), value(value) {}
+    SQLCondition(Type type, int cid, void *value) : type(type), cid(cid), value(value) {}
 };
 
 class SQLWhereClause{
@@ -331,9 +343,9 @@ public:
         return strncasecmp(str + token.begin, target, (size_t)len1) == 0;
     }
 
-    SQLWhereClause * parseWhereClause(TableModel * tableModel){
+    std::list<SQLCondition> * parseWhereClause(TableModel * tableModel){
         Token token = tokens[pos];
-        SQLWhereClause * sqlWhereClause = new SQLWhereClause();
+        auto conditionList = new std::list<SQLCondition>;
         try {
             while (token.type == TokenType::name) {
                 int cid = tableModel->getColumnIndex(std::string(str, token.begin, token.end - token.begin + 1));
@@ -362,34 +374,118 @@ public:
                 void * data;
                 ColumnModel * columnModel = tableModel->getColumn(cid);
                 if(token.type == TokenType::integer){
-                    if( columnModel->type != ColumnModel::Type::Int ) throw SQLTypeException(3, "type error");
+                    if( columnModel->getType() != ColumnModel::Type::Int ) throw SQLTypeException(3, "type error");
                     data = new int[1];
                     sscanf(str + token.begin, "%d", data);
                 }
                 else if(token.type == TokenType::string){
-                    if( columnModel->type != ColumnModel::Type::Char ) throw SQLTypeException(3, "type error");
-                    int len = columnModel->size;
+                    if( columnModel->getType() != ColumnModel::Type::Char ) throw SQLTypeException(3, "type error");
+                    int len = columnModel->getSize();
                     data = new char[len + 1];
                     memcpy(data, str + token.begin, len);
                     ((char *)data)[len] = 0;
                 }
                 else if(token.type == TokenType::real){
-                    if( columnModel->type != ColumnModel::Type::Float ) throw SQLTypeException(3, "type error");
+                    if( columnModel->getType() != ColumnModel::Type::Float ) throw SQLTypeException(3, "type error");
                     data = new double[1];
                     sscanf(str + token.begin, "%lf", data);
                 }
                 else throw new SQLSyntaxException(0, "illegal operand");
-                sqlWhereClause->addCondition(new SQLCondition(type, cid, data));
+                conditionList->emplace_back(type, cid, data);
                 pos ++; token = tokens[pos]; // imm
                 if(!tokencmp(token, "and")) break;
                 pos ++; token = tokens[pos]; // and
             }
-            return sqlWhereClause;
+            return conditionList;
         }catch(SQLException e){
-            delete sqlWhereClause;
+            delete conditionList;
             throw e;
         }
     }
+    std::pair<QueryScanner *, SQLWhereClause *>
+    getQueryScanner(TableModel * table, std::list<SQLCondition> * list){
+        int status = 0;
+        SQLCondition *l = nullptr, *r = nullptr;
+        IndexModel *sidx;
+        // 0 => no 1 => findone  2=> left 3=>right 4=>findtwo
+        SQLWhereClause * where = new SQLWhereClause();
+        QueryScanner * scanner = nullptr;
+        for(auto & item : *list){
+            if(status == 1 || status == 4){
+                where->addCondition(new SQLCondition(item.type, item.cid, item.value));
+                continue;
+            }
+            IndexModel * idx = table->findIndexOn(item.cid);
+            if(status == 0){
+                if(idx != nullptr){
+                    if(item.type == SQLCondition::Type::gt
+                       ||item.type == SQLCondition::Type::gte){
+                        l = &item;
+                        status = 2;
+                        sidx = idx;
+                    }
+                    if(item.type == SQLCondition::Type::lt
+                       ||item.type == SQLCondition::Type::lte){
+                        r = &item;
+                        status = 3;
+                        sidx = idx;
+                    }
+                    if(item.type == SQLCondition::Type::eq){
+                        l = &item;
+                        status = 1;
+                        sidx = idx;
+                    }
+                }
+            }
+            else if(status == 2
+                    && idx == sidx
+                    && (item.type == SQLCondition::Type::lt
+                        ||item.type == SQLCondition::Type::lte)){
+                r = &item;
+                status = 4;
+            }
+            else  if(status == 3
+                     && idx == sidx
+                     && (item.type == SQLCondition::Type::gt
+                         ||item.type == SQLCondition::Type::gte)) {
+                l = &item;
+                status = 4;
+            }
+        }
+        if(status == 1){
+            scanner = OneIndexQueryScannerFactory
+                    ::CreateRangeIndexQueryScanner(
+                    table->getColumn(l->cid)->getType(),
+                    sqlSession->getRecordService(),
+                    sqlSession->getBlockService(),
+                    table->getColumn(l->cid)->getSize(),
+                    table->getFid(),
+                    sidx->getFid(),
+                    l->value
+            );
+        }
+        else if(status == 2 ||status == 3 || status == 4){
+            scanner = RangeIndexQueryScannerFactory::
+                CreateRangeIndexQueryScanner(
+                    table->getColumn(l->cid)->getType(),
+                    sqlSession->getRecordService(),
+                    sqlSession->getBlockService(),
+                    table->getColumn(l->cid)->getSize(),
+                    table->getFid(),
+                    sidx->getFid(),
+                    l == nullptr ? l : l->value,
+                    r == nullptr ? r : r->value,
+                    l == nullptr ? true : l->type == SQLCondition::Type::gte,
+                    r == nullptr ? true : r->type == SQLCondition::Type::lte,
+                    l != nullptr,
+                    r != nullptr
+            );
+        }
+        // === select index ===
+        delete list;
+        return std::make_pair(scanner, where);
+    }
+
 
     SQLSelectStatement *  parseSelectStatement(){
         Token token = tokens[pos];
@@ -413,10 +509,15 @@ public:
         pos ++; token = tokens[pos];//FROM
         TableModel * table = sqlSession->getTable(std::string(str, token.begin, token.end - token.begin + 1));
         SQLWhereClause * where = nullptr;
+        QueryScanner * scanner = nullptr;
         pos ++; token = tokens[pos];//tableName
         while(str[token.begin] != ';') {
             if (tokencmp(token, "WHERE")) {
-                pos ++; where = parseWhereClause(table);
+                pos ++;
+                auto list = parseWhereClause(table);
+                auto tmp = getQueryScanner(table, list);
+                scanner = tmp.first;
+                where = tmp.second;
             } else if (tokencmp(token, "ORDER")) {
 
             } else {
@@ -601,6 +702,29 @@ public:
         int fid = fileService->openFile("aes.jb");
         for(int i=1;i<=20; i++)testBlockSr(fid);
     }
+
+    void testQueryScanner(int fid){
+        char buffer[BLOCK_SIZE];
+        size_t len = 8;
+        buffer[0] = 'a';
+        buffer[1] = 'v';
+        buffer[2] = 0;
+        auto a = recordService->insert(fid, buffer, len);
+        buffer[1] = '1';
+        auto b = recordService->insert(fid, buffer, len);
+        buffer[1] = '2';
+        auto c = recordService->insert(fid, buffer, len);
+        buffer[1] = '3';
+        auto d = recordService->insert(fid, buffer, len);
+        printf("read from record 0 %s\n", recordService->read(fid, __fo(a),__bo(a), 8));
+        printf("read from record 1 %s\n", recordService->read(fid, __fo(b),__bo(b), 8));
+        printf("read from record 2 %s\n", recordService->read(fid, __fo(c),__bo(c), 8));
+        printf("read from record 3 %s\n", recordService->read(fid, __fo(d),__bo(d), 8));
+        LinearQueryScanner * linearQueryScanner = new LinearQueryScanner(recordService, blockService, len, fid);
+        linearQueryScanner->scan([](size_t id, void * ptr){
+            printf("scan %d => %s\n", id, ptr);
+        });
+    }
 };
 
 //const int NODE_SIZE = 5;
@@ -643,66 +767,13 @@ int main(){
     ApplicationContainer applicationIoCContainer;
     applicationIoCContainer.start();
     applicationIoCContainer.testSQL();
-//    int fid = applicationIoCContainer.fileService->openFile("test.idx");
+    int fid = applicationIoCContainer.fileService->openFile("test.idx");
 //    BPlusTree<char[16]> bPlusTree(applicationIoCContainer.blockService, fid);
 //    bPlusTree.T_BPLUS_TEST();
     //applicationIoCContainer.testBlock();
-    //applicationIoCContainer.testRecord(fid);
+   // applicationIoCContainer.testQueryScanner(fid);
     return 0;
 }
-
-class QueryScanner{
-protected:
-    RecordService * recordService;
-    BlockService * blockService;
-public:
-    QueryScanner(RecordService *recordService, BlockService *blockService) : recordService(recordService),
-                                                                             blockService(blockService) {}
-
-    virtual void scan( std::function<void(size_t, size_t)> consumer) = 0;
-};
-
-class LinearQueryScanner : public QueryScanner{
-    int fid;
-public:
-    LinearQueryScanner(RecordService *recordService, BlockService *blockService, int fid) : QueryScanner(recordService,
-                                                                                                             blockService),
-                                                                                            fid(fid) {}
-    
-};
-
-template <typename T>
-class OneIndexQueryScanner : public QueryScanner{
-    int ifid;
-    int tfid;
-    T value;
-public:
-    OneIndexQueryScanner(RecordService *recordService, BlockService *blockService, int ifid, int tfid, T value)
-            : QueryScanner(recordService, blockService), ifid(ifid), tfid(tfid), value(value) {}
-
-    void scan(std::function<void(size_t, size_t)> consumer) override {
-        BPlusTree<T> bPlusTree(blockService, ifid);
-        size_t ptr = bPlusTree.findOne(value);
-        if(ptr != 0) consumer(1, ptr);
-    }
-};
-
-template <typename T>
-class RangeIndexQueryScanner : public QueryScanner{
-    int ifid;
-    int tfid;
-    T left, right;
-    bool leq, req;
-public:
-    RangeIndexQueryScanner(RecordService *recordService, BlockService *blockService, int ifid, int tfid, T left,
-                           T right, bool leq, bool req) : QueryScanner(recordService, blockService), ifid(ifid),
-                                                          tfid(tfid), left(left), right(right), leq(leq), req(req) {}
-
-    void scan(std::function<void(size_t, size_t)> consumer) override {
-        BPlusTree<T> bPlusTree(blockService, ifid);
-        bPlusTree.findByRange(left, leq, right, req, consumer);
-    }
-};
 
 
 
@@ -755,7 +826,7 @@ class QueryPlan{
 
 };
 
-class SelectQueryPlan: public SelectQueryPlan{
+class SelectQueryPlan: public QueryPlan{
     QueryScanner * queryScanner;
     QueryFilter * queryFilter;
     std::vector<QueryProjection *> queryProjections;

@@ -217,6 +217,16 @@ public:
         }
     }
 
+    BlockItem * findLeftMostNode(){
+        BlockItem * xBlk = root;
+        Node * x = (Node *) root->value;
+        while(!x->isLeaf) {
+            xBlk = blockService->getBlock(fid, x->s[0]);
+            x = (Node *) xBlk->value;
+        }
+        return xBlk;
+    }
+
     BlockItem * findNode(const Type v){
         now = -1;
         stack.clear();
@@ -261,31 +271,39 @@ public:
     }
 
     size_t findByRange(
-            const Type left, bool leftEqu,
-            const Type right, bool rightEqu,
+            bool withLeft, const Type left, bool leftEqu,
+            bool withRight, const Type right, bool rightEqu,
             std::function<void(size_t, size_t)> consumer
     ){
         size_t counter = 0;
-        BlockItem * xBlk = findNode(left);
-        Node * node = (Node *) xBlk->value;
-        bool find = false;
+        BlockItem * xBlk;
+        Node * node;
         size_t now = 0;
-        for(size_t i = 0; i < node->size; i++){
-            if(TypeUtil<Type>::cmp(node->v[i], left) > 0
-             ||(TypeUtil<Type>::cmp(node->v[i], left) == 0 && leftEqu)){
-                find = true;
-                now = i;
+        if( withLeft ) {
+            xBlk = findNode(left);
+            node = (Node *) xBlk->value;
+            bool find = false;
+            for (size_t i = 0; i < node->size; i++) {
+                if (TypeUtil<Type>::cmp(node->v[i], left) > 0
+                    || (TypeUtil<Type>::cmp(node->v[i], left) == 0 && leftEqu)) {
+                    find = true;
+                    now = i;
+                }
+            }
+            if(!find){
+                if(NEXT_NODE(node) == 0) return 0;
+                xBlk = blockService->getBlock(fid, NEXT_NODE(node));
+                node = (Node *)xBlk;
             }
         }
-        if(!find){
-            if(NEXT_NODE(node) == 0) return 0;
-            xBlk = blockService->getBlock(fid, NEXT_NODE(node));
-            node = (Node *)xBlk;
+        else{
+            xBlk = findLeftMostNode();
+            node = (Node *) xBlk->value;
         }
         while( true ){
             for(size_t i = now; i < node->size; i++){
-                if(TypeUtil<Type>::cmp(node->v[i], right) > 0
-                   ||(TypeUtil<Type>::cmp(node->v[i], right) == 0 && !rightEqu)){
+                if(withRight && (TypeUtil<Type>::cmp(node->v[i], right) > 0
+                   ||(TypeUtil<Type>::cmp(node->v[i], right) == 0 && !rightEqu))){
                     return counter;
                 }
                 consumer(counter++, node->s[i]);

@@ -61,27 +61,27 @@ public:
 template<typename T>
 class GreaterQueryFilter : public CompareQueryFilter<T>{
 public:
-    GreaterQueryFilter(int st, T val): CompareQueryFilter(st, val){}
+    GreaterQueryFilter(int st, T val): CompareQueryFilter<T>(st, val){}
     bool filter(void *data) override {
-        return TypeUtil<T>::cmp(this->val, (T *)((char *)data + st)) > 0;
+        return TypeUtil<T>::cmp(this->val, (T *)((char *)data + this->st)) > 0;
     }
 };
 
 template<typename T>
 class EqualQueryFilter : public CompareQueryFilter<T>{
 public:
-    EqualQueryFilter(int st, T val): CompareQueryFilter(st, val){}
+    EqualQueryFilter(int st, T val): CompareQueryFilter<T>(st, val){}
     bool filter(void *data) override {
-        return TypeUtil<T>::cmp(this->val, (T *)((char *)data + st)) == 0;
+        return TypeUtil<T>::cmp(this->val, (T *)((char *)data + this->st)) == 0;
     }
 };
 
 template<typename T>
 class GreaterOrEqualQueryFilter : public CompareQueryFilter<T>{
 public:
-    GreaterOrEqualQueryFilter(int st, T val): CompareQueryFilter(st, val){}
+    GreaterOrEqualQueryFilter(int st, T val): CompareQueryFilter<T>(st, val){}
     bool filter(void *data) override {
-        return TypeUtil<T>::cmp(this->val, (T *)((char *)data + st)) >= 0;
+        return TypeUtil<T>::cmp(this->val, (T *)((char *)data + this->st)) >= 0;
     }
 };
 
