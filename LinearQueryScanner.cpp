@@ -32,3 +32,7 @@ void LinearQueryScanner::scan(std::function<void(size_t, void *)> consumer)  {
         }
     }
 }
+
+JSON *LinearQueryScanner::toJSON() {
+    return nullptr;
+}

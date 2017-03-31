@@ -14,22 +14,22 @@ public:
     static QueryScanner * CreateRangeIndexQueryScanner(
             ColumnModel::Type type,
             RecordService *recordService, BlockService *blockService, size_t len, int ifid, int tfid,
-            void * left, void * right, bool leq, bool req, bool withLeft, bool withRight
+            void * left, void * right, bool leq, bool req, bool withLeft, bool withRight, std::string on
     ){
         if(type == ColumnModel::Type::Int){
-            int l = *(int *)left;
-            int r = *(int *)right;
+            int l = left == nullptr ? 0 :*(int *)left;
+            int r = right == nullptr ? 0 : *(int *)right;
             return new RangeIndexQueryScanner<int>(
                 recordService, blockService, len, ifid, tfid,
-                l, r, leq, req, withLeft, withRight
+                l, r, leq, req, withLeft, withRight, on
             );
         }
         else if(type == ColumnModel::Type::Float){
-            double l = *(double *)left;
-            double r = *(double *)right;
+            double l = left == nullptr ? 0 : *(double *)left;
+            double r = right == nullptr ? 0 :*(double *)right;
             return new RangeIndexQueryScanner<double>(
                     recordService, blockService, len, ifid, tfid,
-                    l, r, leq, req, withLeft, withRight
+                    l, r, leq, req, withLeft, withRight, on
             );
         }
         else {
@@ -38,19 +38,19 @@ public:
             if(len <= 16){
                return new RangeIndexQueryScanner<char[16]>(
                        recordService, blockService, len, ifid, tfid,
-                       l, r, leq, req, withLeft, withRight
+                       l, r, leq, req, withLeft, withRight, on
                );
             }
             else if( len <=64 ){
                 return new RangeIndexQueryScanner<char[64]>(
                         recordService, blockService, len, ifid, tfid,
-                        l, r, leq, req, withLeft, withRight
+                        l, r, leq, req, withLeft, withRight, on
                 );
             }
             else{
                 return new RangeIndexQueryScanner<char[256]>(
                         recordService, blockService, len, ifid, tfid,
-                        l, r, leq, req, withLeft, withRight
+                        l, r, leq, req, withLeft, withRight, on
                 );
             }
         }

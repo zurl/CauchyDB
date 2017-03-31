@@ -11,7 +11,7 @@ template <typename T>
 class OneIndexQueryScanner : public QueryScanner{
     int ifid;
     int tfid;
-    T value;
+    typename TypeUtil<T>::ref_type value;
 public:
     OneIndexQueryScanner(RecordService *recordService, BlockService *blockService, size_t len, int ifid, int tfid,
                          T value) : QueryScanner(recordService, blockService, len), ifid(ifid), tfid(tfid),
@@ -21,6 +21,10 @@ public:
         BPlusTree<T> bPlusTree(blockService, ifid);
         size_t ptr = bPlusTree.findOne(value);
         if(ptr != 0) consumer(0, recordService->read(tfid, ptr / perBlock, ptr % perBlock, len));
+    }
+
+    JSON *toJSON() override {
+        return nullptr;
     }
 };
 

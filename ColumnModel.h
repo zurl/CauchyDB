@@ -8,14 +8,12 @@
 #include "Common.h"
 
 class ColumnModel{
-    std::string name;
-    size_t size;
-    Type type;
+
 public:
     enum class Type{
         Char, Int, Float
     };
-    ColumnModel( JSON * config ){
+    inline ColumnModel( JSON * config ){
         JSONObject * data = config->toObject();
         name = data->get("name")->asCString();
         size = (size_t)data->get("typeSize")->toInteger()->value;
@@ -32,18 +30,22 @@ public:
         else throw "fuck type";
     }
 
-    size_t getSize() const {
+    inline size_t getSize() const {
         return size;
     }
 
-    Type getType() const {
+    inline Type getType() const {
         return type;
     }
 
-
-    const std::string &getName() const {
+    inline const std::string &getName() const {
         return name;
     }
+
+private:
+    std::string name;
+    size_t size;
+    Type type;
 };
 
 #endif //DB_COLUMNMODEL_H

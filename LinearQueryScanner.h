@@ -13,6 +13,8 @@ public:
     LinearQueryScanner(RecordService *recordService, BlockService *blockService, size_t len, int fid);
 
     void scan(std::function<void(size_t, void *)> consumer) override ;
+
+    JSON *toJSON() override;
 };
 
 

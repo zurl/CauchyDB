@@ -7,6 +7,7 @@
 
 #include "Common.h"
 #include "RecordService.h"
+#include "TableModel.h"
 
 class QueryScanner{
 protected:
@@ -17,6 +18,7 @@ protected:
 public:
     QueryScanner(RecordService *recordService, BlockService *blockService, size_t len) ;
     virtual void scan( std::function<void(size_t, void *)> consumer) = 0;
+    virtual JSON * toJSON() = 0;
 };
 
 #endif //DB_QUERYSCANNER_H

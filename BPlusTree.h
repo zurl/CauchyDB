@@ -28,49 +28,7 @@ struct Node{
     size_t s[NodeSize<Type>::NODE_SIZE + 1];
 };
 
-template<typename Type>
-class TypeUtil {
-public:
-    using Conv = const char *;
-    static void set(Type &a, Type &b){
-        strcpy(a, b);
-    }
-    static void set(Type &a, const char * b){
-        strcpy(a, b);
-    }
-    static int cmp(Type a, Type b){
-        int ret = strcmp((const char *)a, (const char *)b);
-        if ( ret > 0) return 1;
-        if ( ret == 0) return 0;
-        return -1;
-    }
-    static int cmp(Type a, const char * b){
-        int ret = strcmp((const char *)a, b);
-        if ( ret > 0) return 1;
-        if ( ret == 0) return 0;
-        return -1;
-    }
-};
 
-template<>
-class TypeUtil<int>{
-public:
-    static int cmp(int & a, int & b){
-        if( a < b ) return 1;
-        if( a > b ) return -1;
-        return 0;
-    }
-};
-
-template<>
-class TypeUtil<float>{
-public:
-    static int cmp(float & a, float & b){
-        if( a < b ) return 1;
-        if( a > b ) return -1;
-        return 0;
-    }
-};
 
 #define NEXT_NODE(x) ((x)->s[NODE_SIZE])
 #define NODE_SIZE_HALF ((NODE_SIZE + 1) / 2)
@@ -227,7 +185,7 @@ public:
         return xBlk;
     }
 
-    BlockItem * findNode(const Type v){
+    BlockItem * findNode(Type v){
         now = -1;
         stack.clear();
         stackPos.clear();
@@ -259,7 +217,7 @@ public:
         return xBlk;
     }
 
-    size_t findOne(const Type key){
+    size_t findOne(Type key){
         BlockItem * xBlk = findNode(key);
         Node * node = (Node *) xBlk->value;
         for(size_t i = 0; i < node->size; i++){
@@ -271,8 +229,8 @@ public:
     }
 
     size_t findByRange(
-            bool withLeft, const Type left, bool leftEqu,
-            bool withRight, const Type right, bool rightEqu,
+            bool withLeft, Type left, bool leftEqu,
+            bool withRight, Type right, bool rightEqu,
             std::function<void(size_t, size_t)> consumer
     ){
         size_t counter = 0;
@@ -614,8 +572,8 @@ public:
             print(root);
         }
         printf("%d", (int)findOne("24"));
-        printf("\n%d\n", (int)findByRange(
-                "13", true, "2", false,
+        printf("\n%d\n", (int)findByRange(true,
+                "13", true, true, "2", false,
                 [](const size_t index, const size_t value){
                     printf("#%d ", (int)value);
                 }

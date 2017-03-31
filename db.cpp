@@ -12,109 +12,30 @@
 #include "ColumnModel.h"
 #include "RangeIndexQueryScannerFactory.h"
 #include "OneIndexQueryScannerFactory.h"
+#include "IndexModel.h"
+#include "TableModel.h"
 
 using namespace std;
 
-class SQLException{
+
+
+class ColumnTypeUtil{
 public:
-    int code;
-    std::string message;
-    SQLException(int code = 0, std::string && message = "")
-            :code(code), message(message){};
+    inline static JSON * toJSON(ColumnModel::Type type, void * data){
+        if( data == nullptr) return new JSONNull();
+        if( type == ColumnModel::Type::Char ){
+            return new JSONString((char *)data);
+        }
+        else if( type == ColumnModel::Type::Int){
+            return new JSONInteger(*(int *)data);
+        }
+        else {
+            return new JSONDouble(*(double *)data);
+        }
+    }
 };
-
-class SQLExecuteException: public SQLException{
-public:
-    SQLExecuteException(int code = 0, std::string && message = "")
-            :SQLException(code, std::move(message)){}
-
-};
-
-class SQLSyntaxException: public SQLException{
-public:
-    SQLSyntaxException(int code = 0, std::string && message = "")
-            :SQLException(code, std::move(message)){}
-};
-
-class SQLTypeException: public SQLException{
-public:
-    SQLTypeException(int code = 0, std::string && message = "")
-            :SQLException(code, std::move(message)){}
-};
-
-
 // int char float
 
-
-
-class IndexModel{
-    int fid;
-    FileService * fileService;
-    public:
-    IndexModel(FileService * fileService, std::string && name, JSON * config){
-        this->fileService = fileService;
-        fid = fileService->openFile((name + ".cdi").c_str());
-    }
-
-    int getFid() const {
-        return fid;
-    }
-};
-
-
-
-class TableModel{
-    int fid;
-    FileService * fileService;
-    std::string name;
-    std::vector<ColumnModel> columns;
-    std::map<int, IndexModel> indices;
-    std::map<std::string, int> keyindex;
-    public:
-    TableModel(FileService * fileService, std::string && name, JSON * config)
-    :name(name)
-    {
-        // open file
-        this->fileService = fileService;
-        fid = fileService->openFile((name + ".cdt").c_str());
-        JSONArray * data = config->get("columns")->toArray();
-        for(auto & column: data->elements){
-            columns.emplace_back(column);
-        }
-        // build fast search keyindex
-        for(int i = 0; i < columns.size(); i++){
-            keyindex.emplace(columns[i].getName(), i);
-        }
-        JSONObject * jarr = config->get("indices")->toObject();
-        for(auto & index : jarr->hashMap){
-            indices.emplace(
-                    std::piecewise_construct,
-                    std::forward_as_tuple(keyindex[index.second->get("on")->asCString()]),
-                    std::forward_as_tuple(fileService, name + "_" + index.first, index.second)
-            );
-        }
-    }
-
-    IndexModel * findIndexOn(int cid) const {
-        auto iter = indices.find(cid);
-        if(iter == indices.end())return nullptr;
-        else return &iter->second;
-    }
-
-    ColumnModel * getColumn(int cid) const {
-        return &columns[cid];
-    }
-
-    int getFid() const {
-        return fid;
-    }
-
-    int getColumnIndex(const std::string & str) const {
-        auto iter = keyindex.find(str);
-        if( iter == keyindex.end()) throw SQLExecuteException(1, "unknown column");
-        return iter->second;
-    }
-};
 
 
 class DataBaseModel{
@@ -187,6 +108,7 @@ public:
     void loadTable(const string & name){
         dataBaseModel = metaDataService->getDataBase(name);
     }
+
     TableModel * getTable(const string & name){
         if( dataBaseModel == nullptr) return nullptr;
         return dataBaseModel->getTableByName(name);
@@ -194,19 +116,27 @@ public:
 
 };
 
-class SQLStatement{
 
-};
 
 class SQLCondition{
 public:
     enum class Type{
         gt, lt, gte, lte, eq, neq
     };
+    const char * TypeName[6] = {
+            "gt", "lt", "gte", "lte", "eq", "neq"
+    };
     Type type;
     int cid;
     void * value;
     SQLCondition(Type type, int cid, void *value) : type(type), cid(cid), value(value) {}
+    JSON * toJSON(TableModel * tableModel){
+        auto json = new JSONObject();
+        json->hashMap.emplace("type", new JSONString(TypeName[ static_cast<unsigned>(type)]));
+        json->hashMap.emplace("cid", new JSONString(tableModel->getColumn(cid)->getName()));
+        json->hashMap.emplace("value", ColumnTypeUtil::toJSON(tableModel->getColumn(cid)->getType(), value));
+        return json;
+    }
 };
 
 class SQLWhereClause{
@@ -215,17 +145,48 @@ public:
     void addCondition(SQLCondition * cond){
         conds.emplace_back(cond);
     }
+    JSON * toJSON(TableModel * tableModel){
+        auto json = new JSONArray();
+        for(auto * x: conds){
+            json->elements.emplace_back(x->toJSON(tableModel));
+        }
+        return json;
+    }
 };
 
-class SQLSelectStatement : public SQLStatement{
-    TableModel * table;
+
+class QueryPlan{
+    virtual JSON * toJSON() = 0;
+};
+
+class SelectQueryPlan : public QueryPlan{
+    QueryScanner * queryScanner;
+    TableModel * tableModel;
     std::vector<size_t> columns;
     SQLWhereClause * where;
 public:
-    SQLSelectStatement(TableModel *table, const vector<std::string> &columns, SQLWhereClause *where) : table(table), where(where) {
+    SelectQueryPlan(TableModel * tableModel,
+                    QueryScanner *queryScanner,
+                    const vector<std::string> &columns,
+                    SQLWhereClause *where)
+            : tableModel(tableModel), queryScanner(queryScanner), where(where) {
         for(auto & key : columns){
-            this->columns.emplace_back(table->getColumnIndex(key));
+            this->columns.emplace_back(tableModel->getColumnIndex(key));
         }
+    }
+
+private:
+    JSON *toJSON() override {
+        auto json = new JSONObject();
+        auto col = new JSONArray();
+        for(auto & x: columns){
+            col->elements.emplace_back(new JSONInteger(x));
+        }
+        json->hashMap.emplace("table", new JSONString(tableModel->getName()));
+        json->hashMap.emplace("scanner", queryScanner->toJSON());
+        json->hashMap.emplace("colomns", col);
+        json->hashMap.emplace("where", where == nullptr ? new JSONNull() : where->toJSON(tableModel));
+        return json;
     }
 };
 
@@ -380,7 +341,7 @@ public:
                 }
                 else if(token.type == TokenType::string){
                     if( columnModel->getType() != ColumnModel::Type::Char ) throw SQLTypeException(3, "type error");
-                    int len = columnModel->getSize();
+                    size_t len = columnModel->getSize();
                     data = new char[len + 1];
                     memcpy(data, str + token.begin, len);
                     ((char *)data)[len] = 0;
@@ -402,6 +363,7 @@ public:
             throw e;
         }
     }
+
     std::pair<QueryScanner *, SQLWhereClause *>
     getQueryScanner(TableModel * table, std::list<SQLCondition> * list){
         int status = 0;
@@ -478,7 +440,8 @@ public:
                     l == nullptr ? true : l->type == SQLCondition::Type::gte,
                     r == nullptr ? true : r->type == SQLCondition::Type::lte,
                     l != nullptr,
-                    r != nullptr
+                    r != nullptr,
+                    table->getColumn(l->cid)->getName()
             );
         }
         // === select index ===
@@ -487,7 +450,7 @@ public:
     }
 
 
-    SQLSelectStatement *  parseSelectStatement(){
+    SelectQueryPlan *  parseSelectStatement(){
         Token token = tokens[pos];
         std::vector<std::string> columns;
         bool ok = false;
@@ -526,10 +489,10 @@ public:
             }
             token = tokens[pos];
         }
-        return new SQLSelectStatement(table, columns, where);
+        return new SelectQueryPlan(table, scanner, columns, where);
     }
 
-    SQLStatement * parseSQLStatement(){
+    QueryPlan * parseSQLStatement(){
         pos = 0;
         int len = tokens[pos].end - tokens[pos].begin + 1;
         Token token = tokens[pos];pos++;
@@ -591,18 +554,6 @@ public:
  *
  */
 
-class IndexFacade{
-    BlockService * blockService;
-public:
-    IndexFacade(BlockService * blockService)
-        :blockService(blockService){}
-    size_t selectEqual(int fid, void * key, size_t len);
-    //IndexIterator * selectRange(int fid, bool leftEq, bool rightEq, void * left, void * right, size_t len);
-
-    void insert(int fid, void * key, size_t len, size_t value);
-    void remove(int fid, void * key, size_t len);
-};
-
 class ApplicationContainer{
 public:
     BlockService * blockService;
@@ -633,7 +584,7 @@ public:
     }
 
     void testSQL(){
-        auto session = new SQLSession(metaDataService, nullptr);
+        auto session = new SQLSession(metaDataService, nullptr, recordService, blockService);
         session->loadTable("test");
         auto parser = new SQLParser(session);
         parser->tokenize();
@@ -822,21 +773,6 @@ public:
 
 
 
-class QueryPlan{
-
-};
-
-class SelectQueryPlan: public QueryPlan{
-    QueryScanner * queryScanner;
-    QueryFilter * queryFilter;
-    std::vector<QueryProjection *> queryProjections;
-public:
-    SelectQueryPlan(QueryScanner *queryScanner, QueryFilter *queryFilter,
-                    const vector<QueryProjection *> &queryProjections) : queryScanner(queryScanner),
-                                                                         queryFilter(queryFilter),
-                                                                         queryProjections(queryProjections) {}
-
-};
 
 
 /** 
