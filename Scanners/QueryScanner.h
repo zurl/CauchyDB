@@ -5,9 +5,9 @@
 #ifndef DB_QUERYSCANNER_H
 #define DB_QUERYSCANNER_H
 
-#include "Common.h"
-#include "RecordService.h"
-#include "TableModel.h"
+#include "../Common.h"
+#include "../Services/RecordService.h"
+#include "../Models/TableModel.h"
 
 class QueryScanner{
 protected:

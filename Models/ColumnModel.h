@@ -5,7 +5,7 @@
 #ifndef DB_COLUMNMODEL_H
 #define DB_COLUMNMODEL_H
 
-#include "Common.h"
+#include "../Common.h"
 
 class ColumnModel{
 

@@ -34,5 +34,7 @@ void LinearQueryScanner::scan(std::function<void(size_t, void *)> consumer)  {
 }
 
 JSON *LinearQueryScanner::toJSON() {
-    return nullptr;
+    auto json = new JSONObject();
+    json->hashMap.emplace("type", new JSONString("LinearQueryScanner"));
+    return json;
 }

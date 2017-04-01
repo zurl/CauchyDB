@@ -4,7 +4,7 @@
 
 #ifndef DB_RECORDSERVICE_H
 #define DB_RECORDSERVICE_H
-#include "Common.h"
+#include "../Common.h"
 #include "BlockService.h"
 
 class RecordService{

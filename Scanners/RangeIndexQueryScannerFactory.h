@@ -5,7 +5,7 @@
 #ifndef DB_RANGEINDEXQUERYSCANNERFACTORY_H
 #define DB_RANGEINDEXQUERYSCANNERFACTORY_H
 
-#include "ColumnModel.h"
+#include "../Models/ColumnModel.h"
 #include "QueryScanner.h"
 #include "RangeIndexQueryScanner.h"
 

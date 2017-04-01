@@ -5,7 +5,7 @@
 #ifndef DB_INDEXMODEL_H
 #define DB_INDEXMODEL_H
 
-#include "FileService.h"
+#include "../Services/FileService.h"
 
 
 class IndexModel{

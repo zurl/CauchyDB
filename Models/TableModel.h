@@ -6,8 +6,8 @@
 #define DB_TABLEMODEL_H
 
 #include "ColumnModel.h"
-#include "Common.h"
-#include "FileService.h"
+#include "../Common.h"
+#include "../Services/FileService.h"
 #include "IndexModel.h"
 
 class TableModel{
@@ -15,6 +15,7 @@ class TableModel{
     FileService * fileService;
     std::string name;
     std::vector<ColumnModel> columns;
+    size_t len;
     std::map<int, IndexModel> indices;
     std::map<std::string, int> keyindex;
 public:
@@ -38,6 +39,10 @@ public:
         auto iter = keyindex.find(str);
         if( iter == keyindex.end()) throw SQLExecuteException(1, "unknown column");
         return iter->second;
+    }
+
+    inline size_t getLen() const {
+        return len;
     }
 };
 

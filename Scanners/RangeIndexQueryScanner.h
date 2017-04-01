@@ -6,7 +6,7 @@
 #define DB_RANGEINDEXQUERYSCANNER_H
 
 #include "QueryScanner.h"
-#include "BPlusTree.h"
+#include "../BPlusTree.h"
 
 template <typename T>
 class RangeIndexQueryScanner : public QueryScanner{

@@ -4,7 +4,7 @@
 
 #ifndef DB_ONEINDEXQUERYSCANNERFACTORY_H
 #define DB_ONEINDEXQUERYSCANNERFACTORY_H
-#include "ColumnModel.h"
+#include "../Models/ColumnModel.h"
 #include "OneIndexQueryScanner.h"
 
 class OneIndexQueryScannerFactory{
@@ -12,19 +12,19 @@ public:
     static QueryScanner * CreateRangeIndexQueryScanner(
             ColumnModel::Type type,
             RecordService *recordService, BlockService *blockService, size_t len, int ifid, int tfid,
-            void * value){
+            void * value, std::string on){
         if(type == ColumnModel::Type::Int){
             int v = *(int *)value;
             return new OneIndexQueryScanner<int>(
                     recordService, blockService, len, ifid, tfid,
-                    v
+                    v,on
             );
         }
         else if(type == ColumnModel::Type::Float){
             double v = *(double *)value;
             return new OneIndexQueryScanner<double>(
                     recordService, blockService, len, ifid, tfid,
-                    v
+                    v,on
             );
         }
         else {
@@ -32,19 +32,19 @@ public:
             if(len <= 16){
                 return new OneIndexQueryScanner<char[16]>(
                         recordService, blockService, len, ifid, tfid,
-                        v
+                        v,on
                 );
             }
             else if( len <=64 ){
                 return new OneIndexQueryScanner<char[64]>(
                         recordService, blockService, len, ifid, tfid,
-                        v
+                        v,on
                 );
             }
             else{
                 return new OneIndexQueryScanner<char[256]>(
                         recordService, blockService, len, ifid, tfid,
-                        v
+                        v,on
                 );
             }
         }

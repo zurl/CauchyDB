@@ -8,15 +8,18 @@ TableModel::TableModel(FileService * fileService, std::string && name, JSON * co
         :name(name)
 {
     // open file
+    len = 0;
     this->fileService = fileService;
     fid = fileService->openFile((name + ".cdt").c_str());
     JSONArray * data = config->get("columns")->toArray();
     for(auto & column: data->elements){
         columns.emplace_back(column);
+
     }
     // build fast search keyindex
     for(int i = 0; i < columns.size(); i++){
         keyindex.emplace(columns[i].getName(), i);
+        len+=columns[i].getSize();
     }
     JSONObject * jarr = config->get("indices")->toObject();
     for(auto & index : jarr->hashMap){

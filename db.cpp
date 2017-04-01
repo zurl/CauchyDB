@@ -1,19 +1,19 @@
 
 #include "Common.h"
-#include "FileService.h"
-#include "BlockService.h"
+#include "Services/FileService.h"
+#include "Services/BlockService.h"
 #include "BPlusTree.h"
 #include "Configuration.h"
-#include "RecordService.h"
+#include "Services/RecordService.h"
 #include "QueryFilter.h"
-#include "QueryScanner.h"
-#include "LinearQueryScanner.h"
-#include "OneIndexQueryScanner.h"
-#include "ColumnModel.h"
-#include "RangeIndexQueryScannerFactory.h"
-#include "OneIndexQueryScannerFactory.h"
-#include "IndexModel.h"
-#include "TableModel.h"
+#include "Scanners/QueryScanner.h"
+#include "Scanners/LinearQueryScanner.h"
+#include "Scanners/OneIndexQueryScanner.h"
+#include "Models/ColumnModel.h"
+#include "Scanners/RangeIndexQueryScannerFactory.h"
+#include "Scanners/OneIndexQueryScannerFactory.h"
+#include "Models/IndexModel.h"
+#include "Models/TableModel.h"
 
 using namespace std;
 
@@ -156,7 +156,25 @@ public:
 
 
 class QueryPlan{
+public:
     virtual JSON * toJSON() = 0;
+};
+
+class InsertQueryPlan : public QueryPlan{
+    TableModel * tableModel;
+    std::vector<void *> value;
+public:
+    InsertQueryPlan(TableModel *tableModel) : tableModel(tableModel){}
+    ~InsertQueryPlan(){
+        for(auto & x : value){ delete x; }
+    }
+    void emplace(void * v){
+        value.emplace_back(v);
+    }
+
+    JSON *toJSON() override {
+        return nullptr;
+    }
 };
 
 class SelectQueryPlan : public QueryPlan{
@@ -175,6 +193,10 @@ public:
         }
     }
 
+    ~SelectQueryPlan(){
+        delete queryScanner;
+        delete where;
+    }
 private:
     JSON *toJSON() override {
         auto json = new JSONObject();
@@ -184,7 +206,7 @@ private:
         }
         json->hashMap.emplace("table", new JSONString(tableModel->getName()));
         json->hashMap.emplace("scanner", queryScanner->toJSON());
-        json->hashMap.emplace("colomns", col);
+        json->hashMap.emplace("columns", col);
         json->hashMap.emplace("where", where == nullptr ? new JSONNull() : where->toJSON(tableModel));
         return json;
     }
@@ -192,7 +214,8 @@ private:
 
 class SQLParser{
     SQLSession * sqlSession;
-    const char * str = "select * from test where id >= 20 and value = 'F';";
+    const char * str = "insert into test (id, value) values (20, '20');";
+    //const char * str = "select id, value from test where value = '20' and value = 'F';";
 public:
     SQLParser(SQLSession *sqlSession) : sqlSession(sqlSession) {}
 
@@ -343,8 +366,8 @@ public:
                     if( columnModel->getType() != ColumnModel::Type::Char ) throw SQLTypeException(3, "type error");
                     size_t len = columnModel->getSize();
                     data = new char[len + 1];
-                    memcpy(data, str + token.begin, len);
-                    ((char *)data)[len] = 0;
+                    memcpy(data, str + token.begin, token.end - token.begin + 1);
+                    ((char *)data)[token.end - token.begin + 1] = 0;
                 }
                 else if(token.type == TokenType::real){
                     if( columnModel->getType() != ColumnModel::Type::Float ) throw SQLTypeException(3, "type error");
@@ -385,17 +408,20 @@ public:
                         l = &item;
                         status = 2;
                         sidx = idx;
+                        continue;
                     }
                     if(item.type == SQLCondition::Type::lt
                        ||item.type == SQLCondition::Type::lte){
                         r = &item;
                         status = 3;
                         sidx = idx;
+                        continue;
                     }
                     if(item.type == SQLCondition::Type::eq){
                         l = &item;
                         status = 1;
                         sidx = idx;
+                        continue;
                     }
                 }
             }
@@ -405,6 +431,7 @@ public:
                         ||item.type == SQLCondition::Type::lte)){
                 r = &item;
                 status = 4;
+                continue;
             }
             else  if(status == 3
                      && idx == sidx
@@ -412,7 +439,10 @@ public:
                          ||item.type == SQLCondition::Type::gte)) {
                 l = &item;
                 status = 4;
+                continue;
             }
+            where->addCondition(new SQLCondition(item.type, item.cid, item.value));
+
         }
         if(status == 1){
             scanner = OneIndexQueryScannerFactory
@@ -420,10 +450,11 @@ public:
                     table->getColumn(l->cid)->getType(),
                     sqlSession->getRecordService(),
                     sqlSession->getBlockService(),
-                    table->getColumn(l->cid)->getSize(),
+                    table->getLen(),
                     table->getFid(),
                     sidx->getFid(),
-                    l->value
+                    l->value,
+                    table->getColumn(l->cid)->getName()
             );
         }
         else if(status == 2 ||status == 3 || status == 4){
@@ -432,7 +463,7 @@ public:
                     table->getColumn(l->cid)->getType(),
                     sqlSession->getRecordService(),
                     sqlSession->getBlockService(),
-                    table->getColumn(l->cid)->getSize(),
+                    table->getLen(),
                     table->getFid(),
                     sidx->getFid(),
                     l == nullptr ? l : l->value,
@@ -450,7 +481,7 @@ public:
     }
 
 
-    SelectQueryPlan *  parseSelectStatement(){
+    SelectQueryPlan * parseSelectStatement(){
         Token token = tokens[pos];
         std::vector<std::string> columns;
         bool ok = false;
@@ -489,7 +520,68 @@ public:
             }
             token = tokens[pos];
         }
+        if(scanner == nullptr)scanner = new LinearQueryScanner(
+                    sqlSession->getRecordService(),
+                    sqlSession->getBlockService(),
+                    table->getLen(),
+                    table->getFid());
         return new SelectQueryPlan(table, scanner, columns, where);
+    }
+
+    InsertQueryPlan * parseInsertStatement(){
+        //auto insertQueryPlan = new InsertQueryPlan();
+        Token token = tokens[pos];
+        std::vector<size_t> columns;
+        if(!tokencmp(token, "into")) throw SQLSyntaxException(0, "syntax error");
+        pos++;token = tokens[pos]; //into
+        TableModel * table = sqlSession->getTable(std::string(str, token.begin, token.end - token.begin + 1));
+        if(!tokencmp(token, "("))throw SQLSyntaxException(0, "syntax error");
+        pos++;token = tokens[pos];// (
+        while( pos < tokens.size()){
+            columns.emplace_back(table->getColumnIndex(std::string(str, token.begin, token.end - token.begin + 1)));
+            pos ++; token = tokens[pos]; // name;
+            if(str[token.begin] != ')')break;
+            if(str[token.begin] != ',') throw SQLSyntaxException(2, "syntax error");
+            pos ++; token = tokens[pos]; // ,
+        }
+        pos ++; token = tokens[pos]; // )
+        if(!tokencmp(token, "values")) throw SQLSyntaxException(2, "syntax error");
+        pos ++; token = tokens[pos]; // (
+        int cur = 0;
+        auto result = new InsertQueryPlan(table);
+        while( pos < tokens.size()) {
+            //TODO:: value
+            void * data;
+            auto columnModel = table->getColumn(columns[cur]);
+            if(token.type == TokenType::integer){
+                if( columnModel->getType() != ColumnModel::Type::Int ) throw SQLTypeException(3, "type error");
+                data = new int[1];
+                sscanf(str + token.begin, "%d", data);
+            }
+            else if(token.type == TokenType::string){
+                if( columnModel->getType() != ColumnModel::Type::Char ) throw SQLTypeException(3, "type error");
+                size_t len = columnModel->getSize();
+                data = new char[len + 1];
+                memcpy(data, str + token.begin, token.end - token.begin + 1);
+                ((char *)data)[token.end - token.begin + 1] = 0;
+            }
+            else if(token.type == TokenType::real){
+                if( columnModel->getType() != ColumnModel::Type::Float ) throw SQLTypeException(3, "type error");
+                data = new double[1];
+                sscanf(str + token.begin, "%lf", data);
+            }
+            else  throw SQLSyntaxException(2, "syntax error");
+            result->emplace(data);
+            pos ++; token = tokens[pos]; // value;
+            if(str[token.begin] != ')')break;
+            if(str[token.begin] != ',') throw SQLSyntaxException(2, "syntax error");
+            pos ++; token = tokens[pos]; // ,
+            cur ++;
+        }
+        pos ++; token = tokens[pos]; // )
+        if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
+        pos ++; token = tokens[pos]; // ;
+        return result;
     }
 
     QueryPlan * parseSQLStatement(){
@@ -504,7 +596,7 @@ public:
 
             }
             else if( tokencmp(token, "insert")){
-
+                return parseInsertStatement();
             }
             else if( tokencmp(token, "create")){
 
@@ -574,7 +666,7 @@ public:
         // Load MetaDataService { Register File => FileService }
         // Load BlockService { Inject FileService }
         // Load QueryRunnerService{ Inject BlockService }
-        // Load QueryBuilderSerice { Inject QueryRunnerService }
+        // Load QueryBuilderService { Inject QueryRunnerService }
         // Load SQLInterpreterService { Inject QueryBuilderSerice }
         Configuration::initialize();
         fileService = new FileService();
@@ -590,6 +682,7 @@ public:
         parser->tokenize();
         parser->test();
         auto sql = parser->parseSQLStatement();
+        std::cout<<sql->toJSON()->toString(true)<<endl;
     }
 
 #define __fo(x) ((x) / BLOCK_SIZE )
