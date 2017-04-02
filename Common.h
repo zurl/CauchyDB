@@ -118,5 +118,26 @@ public:
     }
 };
 
+enum class ColumnType{
+    Char, Int, Float
+};
+
+class ColumnTypeUtil{
+public:
+    static JSON * toJSON(ColumnType type, void * data){
+        if( data == nullptr) return new JSONNull();
+        if( type == ColumnType::Char ){
+            return new JSONString((char *)data);
+        }
+        else if( type == ColumnType::Int){
+            return new JSONInteger(*(int *)data);
+        }
+        else {
+            return new JSONDouble(*(double *)data);
+        }
+    }
+};
+
+
 
 #endif //DB_COMMON_H

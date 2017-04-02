@@ -10,22 +10,19 @@
 class ColumnModel{
 
 public:
-    enum class Type{
-        Char, Int, Float
-    };
     inline ColumnModel( JSON * config ){
         JSONObject * data = config->toObject();
         name = data->get("name")->asCString();
         size = (size_t)data->get("typeSize")->toInteger()->value;
         const char * typestr = data->get("type")->asCString();
         if( strcmp(typestr, "int") == 0){
-            type = Type::Int;
+            type = ColumnType::Int;
         }
         else if( strcmp(typestr, "char") == 0){
-            type = Type::Char;
+            type = ColumnType::Char;
         }
         else if( strcmp(typestr, "float") == 0){
-            type = Type::Float;
+            type = ColumnType::Float;
         }
         else throw "fuck type";
     }
@@ -34,7 +31,7 @@ public:
         return size;
     }
 
-    inline Type getType() const {
+    inline ColumnType getType() const {
         return type;
     }
 
@@ -45,7 +42,7 @@ public:
 private:
     std::string name;
     size_t size;
-    Type type;
+    ColumnType type;
 };
 
 #endif //DB_COLUMNMODEL_H

@@ -44,6 +44,10 @@ public:
     inline size_t getLen() const {
         return len;
     }
+
+    inline const std::vector<ColumnModel> &getColumns() {
+        return columns;
+    }
 };
 
 #endif //DB_TABLEMODEL_H

@@ -10,9 +10,9 @@
 class LinearQueryScanner : public QueryScanner{
     int fid;
 public:
-    LinearQueryScanner(RecordService *recordService, BlockService *blockService, size_t len, int fid);
+    LinearQueryScanner(RecordService *recordService,int fid,size_t len);
 
-    void scan(std::function<void(size_t, void *)> consumer) override ;
+    void scan(std::function<void(size_t, void *)> consumer) override;
 
     JSON *toJSON() override;
 };

@@ -11,13 +11,13 @@
 
 class QueryScanner{
 protected:
-    RecordService * recordService;
-    BlockService * blockService;
     size_t len;
     size_t perBlock;
+    RecordService * recordService;
 public:
-    QueryScanner(RecordService *recordService, BlockService *blockService, size_t len) ;
-    virtual void scan( std::function<void(size_t, void *)> consumer) = 0;
+    QueryScanner(size_t len, RecordService *recordService);
+
+    virtual void scan(std::function<void(size_t, void *)> consumer) = 0;
     virtual JSON * toJSON() = 0;
 };
 
