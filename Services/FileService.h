@@ -14,6 +14,7 @@ public:
     FileService();
     FileService(const FileService & ) = delete;
     FileService operator=(const FileService &) = delete;
+    void createFile(const char * fileName);
     int openFile(const char * fileName);
     FILE * getFile(int fileID);
     size_t allocBlock(int fileID);

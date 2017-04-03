@@ -19,14 +19,16 @@ TableModel::TableModel(FileService * fileService, std::string && name, JSON * co
     // build fast search keyindex
     for(int i = 0; i < columns.size(); i++){
         keyindex.emplace(columns[i].getName(), i);
+        lenTable.emplace(i, len);
         len+=columns[i].getSize();
     }
     JSONObject * jarr = config->get("indices")->toObject();
     for(auto & index : jarr->hashMap){
+        int id = keyindex[index.second->get("on")->asCString()];
         indices.emplace(
                 std::piecewise_construct,
-                std::forward_as_tuple(keyindex[index.second->get("on")->asCString()]),
-                std::forward_as_tuple(fileService, name + "_" + index.first, index.second)
+                std::forward_as_tuple(id),
+                std::forward_as_tuple(fileService, name + "_" + index.first, index.second, lenTable[id])
         );
     }
 }

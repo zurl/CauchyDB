@@ -13,6 +13,9 @@
 #include "Models/TableModel.h"
 #include "Scanners/RangeIndexQueryScanner.h"
 #include "Scanners/OneIndexQueryScanner.h"
+#include "SQLSession.h"
+#include "Models/DataBaseModel.h"
+#include "Services/MetaDataService.h"
 
 using namespace std;
 
@@ -20,84 +23,10 @@ using namespace std;
 
 // int char float
 
-
-class DataBaseModel{
-    std::map<std::string, TableModel * > tables;
-    public:
-    DataBaseModel(FileService * fileService, const std::string & name, JSON * config){
-        JSONObject * data = config->get("tables")->toObject();
-        for(auto & table: data->hashMap){
-            tables.emplace(table.first,
-             new TableModel(fileService, name + "_" + table.first, table.second));
-        }
-    }
-    ~DataBaseModel(){
-        for( auto & x : tables){
-            delete x.second;
-        }
-    }
-    TableModel * getTableByName(const std::string & str){
-        return tables[str];
-    }
-};
-
-class MetaDataService{
-    FileService * fileService;
-    JSON * data;
-    std::map<std::string, DataBaseModel *> dataBases;
-public:
-    ~MetaDataService(){
-        for( auto & x: dataBases){
-            delete x.second;
-        }
-    }
-    DataBaseModel * getDataBase(const string & name){
-        return dataBases[name];
-    }
-    MetaDataService(FileService * fileService)
-        :fileService(fileService){
-        data = JSON::fromFile(Configuration::attrCString("meta_file_path"));
-        // Load All DataBases
-        JSONObject * dbs = data->get("databases")->toObject();
-        for(auto & db: dbs->hashMap){
-            dataBases.emplace(db.first, new DataBaseModel(fileService, db.first, db.second));
-        }
-    }
-};
 // [nullptr][ ][ ][ ][ ]
 // 0->full
 
 // 0 - 7 is header!!
-
-
-class SQLSession{
-    MetaDataService * metaDataService;
-    DataBaseModel * dataBaseModel;
-    RecordService * recordService;
-    BlockService * blockService;
-public:
-    SQLSession(MetaDataService *metaDataService, DataBaseModel *dataBaseModel, RecordService *recordService,
-               BlockService *blockService) : metaDataService(metaDataService), dataBaseModel(dataBaseModel),
-                                             recordService(recordService), blockService(blockService) {}
-
-    RecordService *getRecordService() const {
-        return recordService;
-    }
-
-    BlockService *getBlockService() const {
-        return blockService;
-    }
-
-    void loadTable(const string & name){
-        dataBaseModel = metaDataService->getDataBase(name);
-    }
-
-    TableModel * getTable(const string & name){
-        if( dataBaseModel == nullptr) return nullptr;
-        return dataBaseModel->getTableByName(name);
-    }
-
-};
 
 
 
@@ -142,8 +71,7 @@ class QueryPlan{
 public:
     virtual JSON * toJSON() = 0;
     virtual JSON * runWithJSON(
-            RecordService * recordService,
-            BlockService * blockService
+            RecordService * recordService
     ) = 0;
 };
 
@@ -160,12 +88,16 @@ public:
         return data;
     }
 
-    JSON *runWithJSON( RecordService * recordService,
-                       BlockService * blockService) override {
+    JSON * runWithJSON( RecordService * recordService) override {
         // insert records
         size_t recordId = recordService->insert(tableModel->getFid(), data, tableModel->getLen());
-
-        return nullptr;
+        auto iter = tableModel->getIndices()->begin();
+        while( iter != tableModel->getIndices()->end()){
+            size_t on = iter->second.getOn();
+            iter->second.getIndexRunner()->insert((char *)data + on, recordId);
+            iter ++;
+        }
+        return new JSONInteger(1);
     }
 
     JSON *toJSON() override {
@@ -202,8 +134,15 @@ public:
         }
     }
 
-    JSON *runWithJSON(RecordService *recordService, BlockService *blockService) override {
-        return nullptr;
+    JSON *runWithJSON(RecordService *recordService) override {
+        auto result = new JSONArray();
+        queryScanner->scan([this](size_t id, void *data){
+            auto current = new JSONArray();
+            for(auto & cid : columns){
+                auto col = tableModel->getColumn(cid);
+                current->elements.emplace_back(ColumnTypeUtil::toJSON(col->getType(), (char*)data+col->getOn()));
+            }
+        });
     }
 
     ~SelectQueryPlan(){
@@ -225,6 +164,37 @@ private:
         return json;
     }
 };
+
+class CreateQueryPlan : public QueryPlan{
+
+};
+
+class CreateTableQueryPlan : public CreateQueryPlan{
+
+};
+
+class CreateDataBaseQueryPlan: public CreateQueryPlan{
+    std::string name;
+    SQLSession * sqlSession;
+public:
+    CreateDataBaseQueryPlan(const string &name, SQLSession *sqlSession) : name(name), sqlSession(sqlSession) {}
+
+    JSON *runWithJSON(RecordService *recordService) override {
+        sqlSession->getMetaDataService()->createDataBase(name);
+        return new JSONInteger(0);
+    }
+
+    JSON *toJSON() override {
+        auto json = new JSONObject();
+        json->hashMap.emplace("type", new JSONString("create"));
+        json->hashMap.emplace("subtype", new JSONString("database"));
+        json->hashMap.emplace("name", new JSONString(name));
+        return json;
+    }
+};
+
+
+
 
 class SQLParser{
     SQLSession * sqlSession;
@@ -593,6 +563,21 @@ public:
         return result;
     }
 
+    CreateQueryPlan * parseCreateStatement(){
+        Token token = tokens[pos]; pos ++;
+        if( tokencmp(token, "table") ){
+            token = tokens[pos]; pos ++;// table
+
+        }
+        else if( tokencmp(token, "database") ){
+            token = tokens[pos]; pos ++;// database;
+            if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+            std::string name(str, token.begin, token.end - token.begin + 1);
+
+        }
+        throw SQLSyntaxException(2, "syntax error");
+    }
+
     QueryPlan * parseSQLStatement(){
         pos = 0;
         int len = tokens[pos].end - tokens[pos].begin + 1;
@@ -608,7 +593,7 @@ public:
                 return parseInsertStatement();
             }
             else if( tokencmp(token, "create")){
-
+                return parseCreateStatement();
             }
             else{
                 throw SQLSyntaxException(0, "keyword error");
@@ -632,17 +617,6 @@ public:
 
 };
 
-
-class TableFacade{
-    BlockService * blockService;
-public:
-    TableFacade(BlockService * blockService)
-    :blockService(blockService){}
-
-    size_t findOne(void * key){
-        //fuck everyone
-    }
-};
 
 /*
  * a>=35 && a<=35
@@ -692,6 +666,7 @@ public:
         parser->test();
         auto sql = parser->parseSQLStatement();
         std::cout<<sql->toJSON()->toString(true)<<endl;
+        //std::cout<<sql->runWithJSON(recordService)->toString(true)<<endl;
     }
 
 #define __fo(x) ((x) / BLOCK_SIZE )
@@ -827,55 +802,6 @@ int main(){
    // applicationContainer.testQueryScanner(fid);
     return 0;
 }
-
-
-
-class QueryProjection {
-protected:
-    int st;
-    std::string name;
-public:
-    QueryProjection(int st, const string &name) : st(st), name(name) {}
-
-    virtual std::string project(void * data) = 0;
-};
-
-class IntegerQueryProjection: public QueryProjection{
-public:
-
-    IntegerQueryProjection(int st, const string &name) : QueryProjection(st, name) {}
-
-    std::string project(void * data) override {
-        char str[64];
-        sprintf(str,"%d", *(int *)(((char*)data) + st));
-        return std::string(str);
-    }
-};
-
-class CharQueryProjection:public QueryProjection{
-    int len;
-public:
-    CharQueryProjection(int st, const string &name, int len) : QueryProjection(st, name), len(len) {}
-
-    string project(void * data) override {
-        return std::string((char *)data, st,  len);
-    }
-};
-
-class FloatQueryProjection: public QueryProjection{
-public:
-    FloatQueryProjection(int st, const string &name) : QueryProjection(st, name) {}
-
-    string project(void * data) override {
-        char str[64];
-        sprintf(str,"%.3lf", *(double *)(((char*)data) + st));
-        return std::string(str);
-    }
-};
-
-
-
-
 
 /** 
 

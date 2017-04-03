@@ -55,3 +55,8 @@ FileService::~FileService(){
         fclose(fp);
     }
 }
+
+void FileService::createFile(const char *fileName) {
+    FILE * fp = fopen(fileName,"wb");
+    fclose(fp);
+}

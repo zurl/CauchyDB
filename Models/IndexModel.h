@@ -11,10 +11,11 @@
 
 class IndexModel{
     int fid;
+    size_t on;
     FileService * fileService;
     AbstractIndexRunner * indexRunner;
     public:
-    inline IndexModel(FileService * fileService, std::string && name, JSON * config){
+    inline IndexModel(FileService * fileService, std::string && name, JSON * config, size_t on){
         this->fileService = fileService;
         fid = fileService->openFile((name + ".cdi").c_str());
     }
@@ -23,8 +24,12 @@ class IndexModel{
         return fid;
     }
 
-    AbstractIndexRunner *getIndexRunner() {
+    inline AbstractIndexRunner *getIndexRunner()const {
         return indexRunner;
+    }
+
+    inline size_t getOn() const {
+        return on;
     }
 };
 

@@ -39,10 +39,15 @@ public:
         return name;
     }
 
+    inline size_t getOn() const {
+        return on;
+    }
+
 private:
     std::string name;
     size_t size;
     ColumnType type;
+    size_t on;
 };
 
 #endif //DB_COLUMNMODEL_H

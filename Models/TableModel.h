@@ -17,6 +17,7 @@ class TableModel{
     std::vector<ColumnModel> columns;
     size_t len;
     std::map<int, IndexModel> indices;
+    std::map<int, size_t> lenTable;
     std::map<std::string, int> keyindex;
 public:
     TableModel(FileService * fileService, std::string && name, JSON * config);
@@ -47,6 +48,13 @@ public:
 
     inline const std::vector<ColumnModel> &getColumns() {
         return columns;
+    }
+    inline size_t getColumnLen(int cid){
+        return lenTable[cid];
+    }
+
+    inline std::map<int, IndexModel> * getIndices() {
+        return &indices;
     }
 };
 
