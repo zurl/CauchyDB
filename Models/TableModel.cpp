@@ -38,3 +38,18 @@ IndexModel * TableModel::findIndexOn(int cid)  {
     if(iter == indices.end())return nullptr;
     else return &iter->second;
 }
+
+JSON *TableModel::toJSON() {
+    auto json = new JSONObject();
+    auto jarr = new JSONArray();
+    for(auto & x: indices){
+        jarr->elements.emplace_back(x.second.toJSON());
+    }
+    json->hashMap.emplace("indices", jarr);
+    jarr = new JSONArray();
+    for(auto &x: columns){
+        jarr->elements.emplace_back(x.toJSON());
+    }
+    json->hashMap.emplace("columns", jarr);
+    return json;
+}

@@ -14,8 +14,9 @@ class IndexModel{
     size_t on;
     FileService * fileService;
     AbstractIndexRunner * indexRunner;
+    std::string name;
     public:
-    inline IndexModel(FileService * fileService, std::string && name, JSON * config, size_t on){
+    inline IndexModel(FileService * fileService, std::string && name, JSON * config, size_t on):name(name){
         this->fileService = fileService;
         fid = fileService->openFile((name + ".cdi").c_str());
     }
@@ -31,6 +32,8 @@ class IndexModel{
     inline size_t getOn() const {
         return on;
     }
+
+    JSON * toJSON();
 };
 
 #endif //DB_INDEXMODEL_H

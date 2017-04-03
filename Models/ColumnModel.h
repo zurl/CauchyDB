@@ -43,6 +43,7 @@ public:
         return on;
     }
 
+    JSON * toJSON();
 private:
     std::string name;
     size_t size;

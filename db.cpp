@@ -21,15 +21,6 @@ using namespace std;
 
 
 
-// int char float
-
-// [nullptr][ ][ ][ ][ ]
-// 0->full
-
-// 0 - 7 is header!!
-
-
-
 class SQLCondition{
 public:
     enum class Type{
@@ -567,13 +558,18 @@ public:
         Token token = tokens[pos]; pos ++;
         if( tokencmp(token, "table") ){
             token = tokens[pos]; pos ++;// table
+            if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+            std::string name(str, token.begin, token.end - token.begin + 1);
+            if(str[token.begin] != '(') throw SQLSyntaxException(2, "syntax error");
+            token = tokens[pos]; pos ++;// (
+            auto jarr = new JSONArray();
 
         }
         else if( tokencmp(token, "database") ){
             token = tokens[pos]; pos ++;// database;
             if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
             std::string name(str, token.begin, token.end - token.begin + 1);
-
+            return new CreateDataBaseQueryPlan(name, sqlSession);
         }
         throw SQLSyntaxException(2, "syntax error");
     }

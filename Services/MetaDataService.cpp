@@ -29,3 +29,13 @@ void MetaDataService::createDataBase(const std::string & name){
     if(iter != dataBases.end()) throw SQLExecuteException(10, "used name");
     dataBases.emplace(name, new DataBaseModel(fileService, name, nullptr));
 }
+
+JSON *MetaDataService::toJSON() {
+    auto json = new JSONObject();
+    auto jobj = new JSONObject();
+    for(auto &x : dataBases){
+        jobj->hashMap.emplace(x.first, x.second->toJSON());
+    }
+    json->hashMap.emplace("databases", jobj);
+    return json;
+}

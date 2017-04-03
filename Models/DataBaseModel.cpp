@@ -29,3 +29,13 @@ void DataBaseModel::createTable(const std::string &str, JSON *config) {
     tables.emplace(str,
                    new TableModel(fileService, name + "_" + str + ".ct", config));
 }
+
+JSON *DataBaseModel::toJSON() {
+    auto json = new JSONObject();
+    auto jobj = new JSONObject();
+    for(auto &x : tables){
+        jobj->hashMap.emplace(x.first, x.second->toJSON());
+    }
+    json->hashMap.emplace("tables", jobj);
+    return json;
+}

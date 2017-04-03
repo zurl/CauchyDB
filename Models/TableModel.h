@@ -56,6 +56,8 @@ public:
     inline std::map<int, IndexModel> * getIndices() {
         return &indices;
     }
+
+    JSON * toJSON();
 };
 
 #endif //DB_TABLEMODEL_H
