@@ -274,7 +274,7 @@ public:
         assert(0);
     }
 
-    void insert(const Type key, size_t value){
+    bool insert(const Type key, size_t value){
         BlockItem * xBlk = findNode(key);
         Node * x = (Node *)xBlk->value;
         if( x->size < NODE_SIZE){
@@ -284,7 +284,10 @@ public:
                     TypeUtil<Type>::set(x->v[i] , key);
                     x->s[i] = value;
                     x->size ++;
-                    return;
+                    return true;
+                }
+                else if(TypeUtil<Type>::cmp(x->v[i - 1], key) == 0){
+                    return false;
                 }
                 else{
                     TypeUtil<Type>::set(x->v[i] , x->v[i - 1]);
@@ -296,6 +299,12 @@ public:
             x->size ++;
         }
         else{
+            // check the equal situation
+            for(int i = x->size; i>=1; i--) {
+                if(TypeUtil<Type>::cmp(x->v[i - 1], key) == 0){
+                    return false;
+                }
+            }
             // For split of leaf node, the result size is
             // [HALF, HALF], a recursive
             // insertion to parent node is required
@@ -311,7 +320,7 @@ public:
                 // target node requires linear insertion
                 bool flag = false;
                 for(int i = NODE_SIZE_HALF; i < NODE_SIZE; i ++){
-                    if(!flag && TypeUtil<Type>::cmp(x->v[i], key) > 0){
+                    if(!flag && TypeUtil<Type>::cmp(x->v[i], key) >= 0){
                         TypeUtil<Type>::set(next->v[next->size] , key);
                         next->s[next->size++] = value;
                         flag = true;
@@ -354,6 +363,7 @@ public:
             nextBlk->modified = 1;
         }
         xBlk->modified = 1;
+        return true;
     }
 
     void removeFrom(){
@@ -446,14 +456,14 @@ public:
         }
     }
 
-    void remove(const Type v){
+    bool remove(const Type v){
         BlockItem * xBlk = findNode(v);
         Node * x = (Node *) xBlk->value;
         int pos;
         for(pos = 0; pos < x->size; pos++){
             if(TypeUtil<Type>::cmp(x->v[pos], v) == 0)break;
         }
-        if(pos == x->size) throw "error"; // NOT FOUND
+        if(pos == x->size) return false; // NOT FOUND
 
         for(int i = pos; i < x->size - 1; i++){
             TypeUtil<Type>::set(x->v[i], x->v[i+1]);
@@ -464,7 +474,7 @@ public:
         xBlk->modified = 1;
 
         if( xBlk->offset == root->offset ){
-            return;
+            return true;
         }
 
 
@@ -478,7 +488,7 @@ public:
                 //parent->v[parentPos - 1] = x->v[0];
                 parentBlk->modified = 1;
             }
-            return;
+            return true;
         }
 
         if( parentPos != 0 ){
@@ -543,6 +553,7 @@ public:
             sibBlk->modified = 1;
         }
         parentBlk->modified = 1;
+        return true;
     }
     void DO_LINEAR_TEST(){
         printf("====linear test===\n");

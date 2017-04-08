@@ -16,180 +16,21 @@
 #include "SQLSession.h"
 #include "Models/DataBaseModel.h"
 #include "Services/MetaDataService.h"
+#include "QueryPlans/QueryPlan.h"
+#include "QueryPlans/SelectQueryPlan.h"
+#include "QueryPlans/InsertQueryPlan.h"
+#include "QueryPlans/SQLCondition.h"
+#include "QueryPlans/SQLWhereClause.h"
+#include "QueryPlans/CreateDataBaseQueryPlan.h"
+#include "QueryPlans/CreateTableQueryPlan.h"
 
 using namespace std;
 
 
-
-class SQLCondition{
-public:
-    enum class Type{
-        gt, lt, gte, lte, eq, neq
-    };
-    const char * TypeName[6] = {
-            "gt", "lt", "gte", "lte", "eq", "neq"
-    };
-    Type type;
-    int cid;
-    void * value;
-    SQLCondition(Type type, int cid, void *value) : type(type), cid(cid), value(value) {}
-    JSON * toJSON(TableModel * tableModel){
-        auto json = new JSONObject();
-        json->hashMap.emplace("type", new JSONString(TypeName[ static_cast<unsigned>(type)]));
-        json->hashMap.emplace("cid", new JSONString(tableModel->getColumn(cid)->getName()));
-        json->hashMap.emplace("value", ColumnTypeUtil::toJSON(tableModel->getColumn(cid)->getType(), value));
-        return json;
-    }
-};
-
-class SQLWhereClause{
-    std::vector<SQLCondition *> conds;
-public:
-    void addCondition(SQLCondition * cond){
-        conds.emplace_back(cond);
-    }
-    JSON * toJSON(TableModel * tableModel){
-        auto json = new JSONArray();
-        for(auto * x: conds){
-            json->elements.emplace_back(x->toJSON(tableModel));
-        }
-        return json;
-    }
-};
-
-
-class QueryPlan{
-public:
-    virtual JSON * toJSON() = 0;
-    virtual JSON * runWithJSON(
-            RecordService * recordService
-    ) = 0;
-};
-
-class InsertQueryPlan : public QueryPlan{
-    TableModel * tableModel;
-    void * data;
-public:
-    InsertQueryPlan(TableModel *tableModel) : tableModel(tableModel), data(new char[tableModel->getLen()]){}
-    ~InsertQueryPlan(){
-        delete[] data;
-    }
-
-    void *getData() const {
-        return data;
-    }
-
-    JSON * runWithJSON( RecordService * recordService) override {
-        // insert records
-        size_t recordId = recordService->insert(tableModel->getFid(), data, tableModel->getLen());
-        auto iter = tableModel->getIndices()->begin();
-        while( iter != tableModel->getIndices()->end()){
-            size_t on = iter->second.getOn();
-            iter->second.getIndexRunner()->insert((char *)data + on, recordId);
-            iter ++;
-        }
-        return new JSONInteger(1);
-    }
-
-    JSON *toJSON() override {
-        auto json = new JSONObject();
-        json->hashMap.emplace("type", new JSONString("insert"));
-        json->hashMap.emplace("table", new JSONString(tableModel->getName()));
-        auto jarr = new JSONArray();
-        char * cur = (char *)data;
-        for(int i = 0; i < tableModel->getColumns().size(); i++){
-            jarr->elements.emplace_back(ColumnTypeUtil::toJSON(
-                    tableModel->getColumn(i)->getType(),
-                    cur
-            ));
-            cur += tableModel->getColumn(i)->getSize();
-        }
-        json->hashMap.emplace("value", jarr);
-        return json;
-    }
-};
-
-class SelectQueryPlan : public QueryPlan{
-    QueryScanner * queryScanner;
-    TableModel * tableModel;
-    std::vector<size_t> columns;
-    SQLWhereClause * where;
-public:
-    SelectQueryPlan(TableModel * tableModel,
-                    QueryScanner *queryScanner,
-                    const vector<std::string> &columns,
-                    SQLWhereClause *where)
-            : tableModel(tableModel), queryScanner(queryScanner), where(where) {
-        for(auto & key : columns){
-            this->columns.emplace_back(tableModel->getColumnIndex(key));
-        }
-    }
-
-    JSON *runWithJSON(RecordService *recordService) override {
-        auto result = new JSONArray();
-        queryScanner->scan([this](size_t id, void *data){
-            auto current = new JSONArray();
-            for(auto & cid : columns){
-                auto col = tableModel->getColumn(cid);
-                current->elements.emplace_back(ColumnTypeUtil::toJSON(col->getType(), (char*)data+col->getOn()));
-            }
-        });
-    }
-
-    ~SelectQueryPlan(){
-        delete queryScanner;
-        delete where;
-    }
-private:
-    JSON *toJSON() override {
-        auto json = new JSONObject();
-        auto col = new JSONArray();
-        for(auto & x: columns){
-            col->elements.emplace_back(new JSONInteger(x));
-        }
-        json->hashMap.emplace("type", new JSONString("select"));
-        json->hashMap.emplace("table", new JSONString(tableModel->getName()));
-        json->hashMap.emplace("scanner", queryScanner->toJSON());
-        json->hashMap.emplace("columns", col);
-        json->hashMap.emplace("where", where == nullptr ? new JSONNull() : where->toJSON(tableModel));
-        return json;
-    }
-};
-
-class CreateQueryPlan : public QueryPlan{
-
-};
-
-class CreateTableQueryPlan : public CreateQueryPlan{
-
-};
-
-class CreateDataBaseQueryPlan: public CreateQueryPlan{
-    std::string name;
-    SQLSession * sqlSession;
-public:
-    CreateDataBaseQueryPlan(const string &name, SQLSession *sqlSession) : name(name), sqlSession(sqlSession) {}
-
-    JSON *runWithJSON(RecordService *recordService) override {
-        sqlSession->getMetaDataService()->createDataBase(name);
-        return new JSONInteger(0);
-    }
-
-    JSON *toJSON() override {
-        auto json = new JSONObject();
-        json->hashMap.emplace("type", new JSONString("create"));
-        json->hashMap.emplace("subtype", new JSONString("database"));
-        json->hashMap.emplace("name", new JSONString(name));
-        return json;
-    }
-};
-
-
-
-
 class SQLParser{
     SQLSession * sqlSession;
-    const char * str = "insert into test (id, value) values (20, '20');";
+    const char * str = "create table test( id int, value char(20) );";
+    //const char * str = "insert into test (id, value) values (20, '20');";
     //const char * str = "select id, value from test where value = '20' and value = 'F';";
 public:
     SQLParser(SQLSession *sqlSession) : sqlSession(sqlSession) {}
@@ -554,6 +395,54 @@ public:
         return result;
     }
 
+    void parseCreateDefinition(JSONArray * defJson, JSONObject * indexJson){
+        auto json = new JSONObject();
+        Token token = tokens[pos]; pos ++;
+        // name;
+        if( token.type != TokenType::name )throw SQLSyntaxException(2, "syntax error");
+        if( tokencmp(token, "primary") ){
+            token = tokens[pos]; pos ++; //primary
+            if( !tokencmp(token, "key"))throw SQLSyntaxException(2, "syntax error");
+            token = tokens[pos]; pos ++; //key
+            if(str[token.begin] != '(') throw SQLSyntaxException(2, "syntax error");
+            token = tokens[pos]; pos ++; // (
+            std::string name(str, token.begin, token.end - token.begin + 1);
+            token = tokens[pos]; pos ++; // name
+            if(str[token.begin] != ')') throw SQLSyntaxException(2, "syntax error");
+            token = tokens[pos]; pos ++; // )
+            json->hashMap.emplace("on", new JSONString(name));
+            json->hashMap.emplace("type", new JSONString("bplus"));
+            indexJson->hashMap.emplace("primary", json);
+            return;
+        }
+        std::string name(str, token.begin, token.end - token.begin + 1);
+        token = tokens[pos]; pos ++; //name
+        if( tokencmp(token, "int")){
+            token = tokens[pos]; pos ++; // int
+            json->hashMap.emplace("type", new JSONString("int"));
+            json->hashMap.emplace("typeSize", new JSONInteger(4));
+        }
+        else if( tokencmp(token, "float")){
+            token = tokens[pos]; pos ++; // float
+            json->hashMap.emplace("type", new JSONString("float"));
+            json->hashMap.emplace("typeSize", new JSONInteger(8));
+        }
+        else if( tokencmp(token, "char")){
+            token = tokens[pos]; pos ++; // (
+            if(str[token.begin] != '(') throw SQLSyntaxException(2, "syntax error");
+            token = tokens[pos]; pos ++; // n
+            if(token.type != TokenType::integer)throw SQLSyntaxException(2, "syntax error");
+            int n = 0;
+            sscanf(str + token.begin, "%d", &n);
+            token = tokens[pos]; pos ++; // )
+            if(str[token.begin] != ')') throw SQLSyntaxException(2, "syntax error");
+            json->hashMap.emplace("type", new JSONString("char"));
+            json->hashMap.emplace("typeSize", new JSONInteger(n));
+        }
+        else  throw SQLSyntaxException(2, "syntax error");
+        defJson->elements.emplace_back(json);
+    }
+
     CreateQueryPlan * parseCreateStatement(){
         Token token = tokens[pos]; pos ++;
         if( tokencmp(token, "table") ){
@@ -562,13 +451,24 @@ public:
             std::string name(str, token.begin, token.end - token.begin + 1);
             if(str[token.begin] != '(') throw SQLSyntaxException(2, "syntax error");
             token = tokens[pos]; pos ++;// (
-            auto jarr = new JSONArray();
-
+            auto indexJson = new JSONObject();
+            auto defJson = new JSONArray();
+            while( pos < tokens.size() ){
+                parseCreateDefinition(defJson, indexJson);
+                if(str[token.begin] == ')') break;
+                if(str[token.begin] != ',') throw SQLSyntaxException(2, "syntax error");
+                token = tokens[pos]; pos ++; // ,
+            }
+            token = tokens[pos]; pos ++;// ;
+            if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
+            return new CreateTableQueryPlan(name, sqlSession, defJson, indexJson);
         }
         else if( tokencmp(token, "database") ){
             token = tokens[pos]; pos ++;// database;
             if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
             std::string name(str, token.begin, token.end - token.begin + 1);
+            token = tokens[pos]; pos ++;// ;
+            if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
             return new CreateDataBaseQueryPlan(name, sqlSession);
         }
         throw SQLSyntaxException(2, "syntax error");
@@ -583,7 +483,7 @@ public:
                 return parseSelectStatement();
             }
             else if( tokencmp(token, "delete")){
-
+                //TODO:: delete
             }
             else if( tokencmp(token, "insert")){
                 return parseInsertStatement();
@@ -607,7 +507,6 @@ public:
                 putchar(str[i]);
             }
             printf("%d\n", x.end - x.begin + 1);
-
         }
     }
 
@@ -662,7 +561,7 @@ public:
         parser->test();
         auto sql = parser->parseSQLStatement();
         std::cout<<sql->toJSON()->toString(true)<<endl;
-        //std::cout<<sql->runWithJSON(recordService)->toString(true)<<endl;
+        //std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
     }
 
 #define __fo(x) ((x) / BLOCK_SIZE )

@@ -5,7 +5,7 @@
 #include "Configuration.h"
 
 void Configuration::initialize(){
-    const char * CONFIG_FILE_NAME = "config.json";
+    const char * CONFIG_FILE_NAME = "config.JSON";
     config = JSON::fromFile(CONFIG_FILE_NAME);
 }
 const char * Configuration::attrCString(const char * key){
