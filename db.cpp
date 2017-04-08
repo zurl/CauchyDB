@@ -1,21 +1,21 @@
 
 #include "Common.h"
-#include "Services/FileService.h"
-#include "Services/BlockService.h"
 #include "BPlusTree.h"
 #include "Configuration.h"
-#include "Services/RecordService.h"
 #include "QueryFilter.h"
-#include "Scanners/QueryScanner.h"
-#include "Scanners/LinearQueryScanner.h"
+#include "SQLSession.h"
 #include "Models/ColumnModel.h"
 #include "Models/IndexModel.h"
 #include "Models/TableModel.h"
+#include "Models/DataBaseModel.h"
+#include "Scanners/QueryScanner.h"
+#include "Scanners/LinearQueryScanner.h"
 #include "Scanners/RangeIndexQueryScanner.h"
 #include "Scanners/OneIndexQueryScanner.h"
-#include "SQLSession.h"
-#include "Models/DataBaseModel.h"
+#include "Services/FileService.h"
+#include "Services/BlockService.h"
 #include "Services/MetaDataService.h"
+#include "Services/RecordService.h"
 #include "QueryPlans/QueryPlan.h"
 #include "QueryPlans/SelectQueryPlan.h"
 #include "QueryPlans/InsertQueryPlan.h"
@@ -409,7 +409,6 @@ public:
             std::string name(str, token.begin, token.end - token.begin + 1);
             token = tokens[pos]; pos ++; // name
             if(str[token.begin] != ')') throw SQLSyntaxException(2, "syntax error");
-            token = tokens[pos]; pos ++; // )
             json->hashMap.emplace("on", new JSONString(name));
             json->hashMap.emplace("type", new JSONString("bplus"));
             indexJson->hashMap.emplace("primary", json);
@@ -418,12 +417,10 @@ public:
         std::string name(str, token.begin, token.end - token.begin + 1);
         token = tokens[pos]; pos ++; //name
         if( tokencmp(token, "int")){
-            token = tokens[pos]; pos ++; // int
             json->hashMap.emplace("type", new JSONString("int"));
             json->hashMap.emplace("typeSize", new JSONInteger(4));
         }
         else if( tokencmp(token, "float")){
-            token = tokens[pos]; pos ++; // float
             json->hashMap.emplace("type", new JSONString("float"));
             json->hashMap.emplace("typeSize", new JSONInteger(8));
         }
@@ -449,15 +446,15 @@ public:
             token = tokens[pos]; pos ++;// table
             if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
             std::string name(str, token.begin, token.end - token.begin + 1);
+            token = tokens[pos]; pos ++;// name
             if(str[token.begin] != '(') throw SQLSyntaxException(2, "syntax error");
-            token = tokens[pos]; pos ++;// (
             auto indexJson = new JSONObject();
             auto defJson = new JSONArray();
             while( pos < tokens.size() ){
                 parseCreateDefinition(defJson, indexJson);
+                token = tokens[pos]; pos ++;
                 if(str[token.begin] == ')') break;
                 if(str[token.begin] != ',') throw SQLSyntaxException(2, "syntax error");
-                token = tokens[pos]; pos ++; // ,
             }
             token = tokens[pos]; pos ++;// ;
             if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
