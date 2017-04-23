@@ -74,7 +74,7 @@ JSON * parseArray(const char * str, size_t & pos){
     while( str[pos] != ']' ){
         JSON * value = parseValue(str, pos);
         if( value == nullptr ) { delete jsonArray; return nullptr; }
-        jsonArray->elements.emplace_back(value);
+        jsonArray->put(value);
         while( isEscapeChar(str[pos]) ) pos ++;
         if( str[pos] != ']' && str[pos] != ','){ delete jsonArray; return nullptr; }
         if (str[pos] == ',') pos++;
@@ -158,7 +158,7 @@ JSON * parseObject(const char * str, size_t & pos){
 
         JSON * value = parseValue(str, pos);
         if( value == nullptr ) { delete jsonObject; return nullptr; }
-        jsonObject->hashMap.emplace( std::move(key), value );
+        jsonObject->set( std::move(key), value );
 
         while( isEscapeChar(str[pos]) ) pos ++;
 

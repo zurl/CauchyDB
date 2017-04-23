@@ -27,17 +27,17 @@ JSON * InsertQueryPlan::runQuery( RecordService * recordService)  {
 
 JSON *InsertQueryPlan::toJSON()  {
     auto json = new JSONObject();
-    json->hashMap.emplace("type", new JSONString("insert"));
-    json->hashMap.emplace("table", new JSONString(tableModel->getName()));
+    json->set("type", "insert");
+    json->set("table", tableModel->getName());
     auto jarr = new JSONArray();
     char * cur = (char *)data;
     for(int i = 0; i < tableModel->getColumns().size(); i++){
-        jarr->elements.emplace_back(ColumnTypeUtil::toJSON(
+        jarr->put(ColumnTypeUtil::toJSON(
                 tableModel->getColumn(i)->getType(),
                 cur
         ));
         cur += tableModel->getColumn(i)->getSize();
     }
-    json->hashMap.emplace("value", jarr);
+    json->set("value", jarr);
     return json;
 }

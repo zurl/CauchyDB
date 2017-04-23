@@ -18,13 +18,13 @@ void RangeIndexQueryScanner::scan(std::function<void(size_t, void *)> consumer) 
 
 JSON *RangeIndexQueryScanner::toJSON()  {
     auto json = new JSONObject();
-    json->hashMap.emplace("type", new JSONString("RangeIndexQueryScanner"));
-    json->hashMap.emplace("on", new JSONString(on));
-    json->hashMap.emplace("left",ColumnTypeUtil::toJSON(indexRunner->getType(), left));
-    json->hashMap.emplace("right", ColumnTypeUtil::toJSON(indexRunner->getType(), right));
-    json->hashMap.emplace("withLeft", new JSONBoolean(withLeft));
-    json->hashMap.emplace("withRight", new JSONBoolean(withRight));
-    json->hashMap.emplace("leq", new JSONBoolean(leq));
-    json->hashMap.emplace("req", new JSONBoolean(req));
+    json->set("type", "RangeIndexQueryScanner");
+    json->set("on", on);
+    json->set("left",ColumnTypeUtil::toJSON(indexRunner->getType(), left));
+    json->set("right", ColumnTypeUtil::toJSON(indexRunner->getType(), right));
+    json->set("withLeft", withLeft);
+    json->set("withRight", withRight);
+    json->set("leq", leq);
+    json->set("req", req);
     return json;
 }

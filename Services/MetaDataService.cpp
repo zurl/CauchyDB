@@ -19,7 +19,7 @@ MetaDataService::MetaDataService(FileService * fileService)
     data = JSON::fromFile(Configuration::attrCString("meta_file_path"));
     // Load All DataBases
     JSONObject * dbs = data->get("databases")->toObject();
-    for(auto & db: dbs->hashMap){
+    for(auto & db: dbs->getHashMap()){
         dataBases.emplace(db.first, new DataBaseModel(fileService, db.first, db.second));
     }
 }
@@ -30,12 +30,12 @@ void MetaDataService::createDataBase(const std::string & name){
     dataBases.emplace(name, new DataBaseModel(fileService, name, nullptr));
 }
 
-JSON *MetaDataService::toJSON() {
+JSON * MetaDataService::toJSON() {
     auto json = new JSONObject();
     auto jobj = new JSONObject();
     for(auto &x : dataBases){
-        jobj->hashMap.emplace(x.first, x.second->toJSON());
+        jobj->set(x.first, x.second->toJSON());
     }
-    json->hashMap.emplace("databases", jobj);
+    json->set("databases", jobj);
     return json;
 }

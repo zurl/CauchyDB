@@ -13,6 +13,7 @@ const size_t JSON_BUFFER_SIZE = 10888897;
 
 class JSONInteger; class JSONDouble;
 class JSONArray; class JSONObject;
+class JSONBoolean;
 
 class JSON{
     public:
@@ -63,14 +64,7 @@ class JSONDouble : public JSON {
     virtual Type type() override;
 };
 
-class JSONObject : public JSON{
-public:
-    std::unordered_map<std::string, JSON *> hashMap;
-    JSONObject();
-    ~JSONObject();
-    virtual std::string toString(bool format = false, size_t indent = 0) override;
-    virtual Type type() override ;
-};
+
 
 class JSONBoolean : public JSON{
     public:
@@ -81,16 +75,55 @@ class JSONBoolean : public JSON{
 };
 
 class JSONArray : public JSON{
-    public:
     std::vector<JSON *> elements;
+public:
     ~JSONArray() ;
     virtual std::string toString(bool format = false, size_t indent = 0) override ;
     virtual Type type() override ;
+    inline const std::vector<JSON *> &getElements() const {
+        return elements;
+    }
+    inline void put(JSON * json){
+        this->elements.emplace_back(json);
+    }
 };
 
 class JSONNull : public JSON {
     virtual std::string toString(bool format = false, size_t indent = 0) override ;
     virtual Type type() override ;
 };
+class JSONObject : public JSON{
+    std::unordered_map<std::string, JSON *> hashMap;
+public:
+    JSONObject();
+    ~JSONObject();
+    virtual std::string toString(bool format = false, size_t indent = 0) override;
+    virtual Type type() override;
+    inline void set(const std::string & key, const std::string & value){
+        this->hashMap.emplace(key, new JSONString(value));
+    }
+    inline void set(const std::string & key, const char * value){
+        this->hashMap.emplace(key, new JSONString(value));
+    }
+    inline void set(const std::string & key, JSON * json){
+        this->hashMap.emplace(key, json);
+    }
+    inline void set(const std::string & key, long long value){
+        this->hashMap.emplace(key, new JSONInteger(value));
+    }
+    inline void set(const std::string & key, int value){
+        this->hashMap.emplace(key, new JSONInteger(value));
+    }
+    inline void set(const std::string & key, size_t value){
+        this->hashMap.emplace(key, new JSONInteger((long long)value));
+    }
+    inline void set(const std::string & key, double value){
+        this->hashMap.emplace(key, new JSONDouble(value));
+    }
+    inline void set(const std::string & key, bool value){
+        this->hashMap.emplace(key, new JSONBoolean(value));
+    }
+    const std::unordered_map<std::string, JSON *> &getHashMap() const;
 
+};
 #endif

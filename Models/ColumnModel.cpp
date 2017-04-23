@@ -7,16 +7,16 @@
 
 JSON * ColumnModel::toJSON(){
     auto json = new JSONObject();
-    json->hashMap.emplace("name", new JSONString(name));
-    json->hashMap.emplace("size", new JSONInteger(size));
+    json->set("name", name);
+    json->set("size", size);
     if( type == ColumnType::Int){
-        json->hashMap.emplace("type", new JSONString("int"));
+        json->set("type", "int");
     }
     else if( type == ColumnType::Float){
-        json->hashMap.emplace("type", new JSONString("float"));
+        json->set("type", "float");
     }
     else if( type == ColumnType::Char){
-        json->hashMap.emplace("type", new JSONString("char"));
+        json->set("type", "char");
     }
     return json;
 }

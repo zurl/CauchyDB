@@ -10,7 +10,7 @@ void SQLWhereClause::addCondition(SQLCondition * cond){
 JSON * SQLWhereClause::toJSON(TableModel * tableModel){
     auto json = new JSONArray();
     for(auto * x: conds){
-        json->elements.emplace_back(x->toJSON(tableModel));
+        json->put(x->toJSON(tableModel));
     }
     return json;
 }

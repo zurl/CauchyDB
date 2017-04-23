@@ -4,9 +4,9 @@
 
 #include "IndexModel.h"
 
-JSON * IndexModel::toJSON() {
+JSON * IndexModel::toJSON(const std::string & on) {
     auto json = new JSONObject();
-    json->hashMap.emplace("type", new JSONString("bplus"));
-    json->hashMap.emplace("name", new JSONString(name));
+    json->set("type", "bplus");
+    json->set("on", on);
     return json;
 }

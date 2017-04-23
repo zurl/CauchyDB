@@ -12,7 +12,7 @@ TableModel::TableModel(FileService * fileService, std::string && name, JSON * co
     this->fileService = fileService;
     fid = fileService->openFile((name + ".cdt").c_str());
     JSONArray * data = config->get("columns")->toArray();
-    for(auto & column: data->elements){
+    for(auto & column: data->getElements()){
         columns.emplace_back(column);
 
     }
@@ -23,12 +23,12 @@ TableModel::TableModel(FileService * fileService, std::string && name, JSON * co
         len+=columns[i].getSize();
     }
     JSONObject * jarr = config->get("indices")->toObject();
-    for(auto & index : jarr->hashMap){
+    for(auto & index : jarr->getHashMap()){
         int id = keyindex[index.second->get("on")->asCString()];
         indices.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(id),
-                std::forward_as_tuple(fileService, name + "_" + index.first, index.second, lenTable[id])
+                std::forward_as_tuple(fileService, name + "_" + index.first, index.first, index.second, lenTable[id])
         );
     }
 }
@@ -41,15 +41,15 @@ IndexModel * TableModel::findIndexOn(int cid)  {
 
 JSON *TableModel::toJSON() {
     auto json = new JSONObject();
-    auto jarr = new JSONArray();
+    auto jobj = new JSONObject();
     for(auto & x: indices){
-        jarr->elements.emplace_back(x.second.toJSON());
+        jobj->set(x.second.getName(),x.second.toJSON(this->columns[x.second.getOn()].getName()));
     }
-    json->hashMap.emplace("indices", jarr);
-    jarr = new JSONArray();
+    json->set("indices", jobj);
+    auto jarr = new JSONArray();
     for(auto &x: columns){
-        jarr->elements.emplace_back(x.toJSON());
+        jarr->put(x.toJSON());
     }
-    json->hashMap.emplace("columns", jarr);
+    json->set("columns", jarr);
     return json;
 }

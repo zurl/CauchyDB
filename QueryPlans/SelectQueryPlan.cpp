@@ -21,7 +21,7 @@ JSON *SelectQueryPlan::runQuery(RecordService *recordService)  {
         auto current = new JSONArray();
         for(auto & cid : columns){
             auto col = tableModel->getColumn(cid);
-            current->elements.emplace_back(ColumnTypeUtil::toJSON(col->getType(), (char*)data+col->getOn()));
+            current->put(ColumnTypeUtil::toJSON(col->getType(), (char*)data+col->getOn()));
         }
     });
 }
@@ -34,12 +34,12 @@ JSON *SelectQueryPlan::toJSON()  {
     auto json = new JSONObject();
     auto col = new JSONArray();
     for(auto & x: columns){
-        col->elements.emplace_back(new JSONInteger(x));
+        col->put(new JSONInteger(x));
     }
-    json->hashMap.emplace("type", new JSONString("select"));
-    json->hashMap.emplace("table", new JSONString(tableModel->getName()));
-    json->hashMap.emplace("scanner", queryScanner->toJSON());
-    json->hashMap.emplace("columns", col);
-    json->hashMap.emplace("where", where == nullptr ? new JSONNull() : where->toJSON(tableModel));
+    json->set("type", "select");
+    json->set("table", tableModel->getName());
+    json->set("scanner", queryScanner->toJSON());
+    json->set("columns", col);
+    json->set("where", where == nullptr ? (JSON *)new JSONNull() : where->toJSON(tableModel));
     return json;
 }

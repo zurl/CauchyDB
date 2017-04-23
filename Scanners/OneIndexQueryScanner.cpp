@@ -15,8 +15,8 @@ void OneIndexQueryScanner::scan(std::function<void(size_t, void *)> consumer)  {
 
 JSON *OneIndexQueryScanner::toJSON()  {
     auto json = new JSONObject();
-    json->hashMap.emplace("type", new JSONString("OneIndexQueryScanner"));
-    json->hashMap.emplace("on", new JSONString(on));
-    json->hashMap.emplace("value", ColumnTypeUtil::toJSON(indexRunner->getType(), value));
+    json->set("type", "OneIndexQueryScanner");
+    json->set("on", on);
+    json->set("value", ColumnTypeUtil::toJSON(indexRunner->getType(), value));
     return json;
 }

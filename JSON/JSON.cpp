@@ -59,6 +59,10 @@ std::string JSONObject::toString(bool format, size_t indent) {
 
 JSON::Type JSONObject::type() { return JSON::Type::Object; }
 
+const std::unordered_map<std::string, JSON *> &JSONObject::getHashMap() const {
+    return hashMap;
+}
+
 JSONBoolean::JSONBoolean(bool value) : value( value ){}
 std::string JSONBoolean::toString(bool format, size_t indent) {
     if( value ) return "true";
@@ -97,15 +101,15 @@ JSON::Type JSONNull::type() { return JSON::Type::Null; }
 JSON * JSON::get(size_t index){
     if( this->type() != JSON::Type::Array) return nullptr;
     JSONArray * jsonArray = (JSONArray *)this;
-    if(index >= jsonArray->elements.size()) return nullptr;
-    return jsonArray->elements[index];
+    if(index >= jsonArray->getElements().size()) return nullptr;
+    return jsonArray->getElements()[index];
 }
 
 JSON * JSON::get(const std::string & index){
     if( this->type() != JSON::Type::Object) return nullptr;
     JSONObject * jsonObject = (JSONObject *)this;
-    auto iter = jsonObject->hashMap.find(index);
-    if( iter == jsonObject->hashMap.end()) return nullptr;
+    auto iter = jsonObject->getHashMap().find(index);
+    if( iter == jsonObject->getHashMap().end()) return nullptr;
     else return iter->second;
 }
 

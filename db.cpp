@@ -29,7 +29,7 @@ using namespace std;
 
 class SQLParser{
     SQLSession * sqlSession;
-    const char * str = "create table test( id int, value char(20) );";
+    const char * str = "create table test( id int, value char(20), primary key(id) );";
     //const char * str = "insert into test (id, value) values (20, '20');";
     //const char * str = "select id, value from test where value = '20' and value = 'F';";
 public:
@@ -176,7 +176,7 @@ public:
                 if(token.type == TokenType::integer){
                     if( columnModel->getType() != ColumnType::Int ) throw SQLTypeException(3, "type error");
                     data = new int[1];
-                    sscanf(str + token.begin, "%d", data);
+                    sscanf(str + token.begin, "%d", (int *)data);
                 }
                 else if(token.type == TokenType::string){
                     if( columnModel->getType() != ColumnType::Char ) throw SQLTypeException(3, "type error");
@@ -188,7 +188,7 @@ public:
                 else if(token.type == TokenType::real){
                     if( columnModel->getType() != ColumnType::Float ) throw SQLTypeException(3, "type error");
                     data = new double[1];
-                    sscanf(str + token.begin, "%lf", data);
+                    sscanf(str + token.begin, "%lf", (double *)data);
                 }
                 else throw new SQLSyntaxException(0, "illegal operand");
                 conditionList->emplace_back(type, cid, data);
@@ -379,7 +379,7 @@ public:
             }
             else if(token.type == TokenType::real){
                 if( columnModel->getType() != ColumnType::Float ) throw SQLTypeException(3, "type error");
-                sscanf(str + token.begin, "%lf", data);
+                sscanf(str + token.begin, "%lf", (double *)data);
                 data += 4;
             }
             else  throw SQLSyntaxException(2, "syntax error");
@@ -409,20 +409,21 @@ public:
             std::string name(str, token.begin, token.end - token.begin + 1);
             token = tokens[pos]; pos ++; // name
             if(str[token.begin] != ')') throw SQLSyntaxException(2, "syntax error");
-            json->hashMap.emplace("on", new JSONString(name));
-            json->hashMap.emplace("type", new JSONString("bplus"));
-            indexJson->hashMap.emplace("primary", json);
+            json->set("on", name);
+            json->set("type", "bplus");
+            indexJson->set("primary", json);
             return;
         }
         std::string name(str, token.begin, token.end - token.begin + 1);
+        json->set("name", name);
         token = tokens[pos]; pos ++; //name
         if( tokencmp(token, "int")){
-            json->hashMap.emplace("type", new JSONString("int"));
-            json->hashMap.emplace("typeSize", new JSONInteger(4));
+            json->set("type", "int");
+            json->set("typeSize", 4);
         }
         else if( tokencmp(token, "float")){
-            json->hashMap.emplace("type", new JSONString("float"));
-            json->hashMap.emplace("typeSize", new JSONInteger(8));
+            json->set("type", "float");
+            json->set("typeSize", 8);
         }
         else if( tokencmp(token, "char")){
             token = tokens[pos]; pos ++; // (
@@ -433,11 +434,11 @@ public:
             sscanf(str + token.begin, "%d", &n);
             token = tokens[pos]; pos ++; // )
             if(str[token.begin] != ')') throw SQLSyntaxException(2, "syntax error");
-            json->hashMap.emplace("type", new JSONString("char"));
-            json->hashMap.emplace("typeSize", new JSONInteger(n));
+            json->set("type", "char");
+            json->set("typeSize", n);
         }
         else  throw SQLSyntaxException(2, "syntax error");
-        defJson->elements.emplace_back(json);
+        defJson->put(json);
     }
 
     CreateQueryPlan * parseCreateStatement(){
@@ -558,7 +559,8 @@ public:
         parser->test();
         auto sql = parser->parseSQLStatement();
         std::cout<<sql->toJSON()->toString(true)<<endl;
-        //std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
+        std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
+        std::cout<<metaDataService->toJSON()->toString(true)<<endl;
     }
 
 #define __fo(x) ((x) / BLOCK_SIZE )
@@ -642,7 +644,7 @@ public:
         printf("read from record 3 %s\n", recordService->read(fid, __fo(d),__bo(d), 8));
         LinearQueryScanner * linearQueryScanner = new LinearQueryScanner(recordService, fid,len);
         linearQueryScanner->scan([](size_t id, void * ptr){
-            printf("scan %d => %s\n", id, ptr);
+            printf("scan %lld => %s\n", (long long)id, ptr);
         });
     }
 };

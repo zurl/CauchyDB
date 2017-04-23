@@ -9,7 +9,7 @@ DataBaseModel::DataBaseModel(FileService * fileService, const std::string & name
 :fileService(fileService),name(name){
     if( config != nullptr){
         JSONObject * data = config->get("tables")->toObject();
-        for(auto & table: data->hashMap){
+        for(auto & table: data->getHashMap()){
             tables.emplace(table.first,
                            new TableModel(fileService, name + "_" + table.first + ".ct", table.second));
         }
@@ -34,8 +34,8 @@ JSON *DataBaseModel::toJSON() {
     auto json = new JSONObject();
     auto jobj = new JSONObject();
     for(auto &x : tables){
-        jobj->hashMap.emplace(x.first, x.second->toJSON());
+        jobj->set(x.first, x.second->toJSON());
     }
-    json->hashMap.emplace("tables", jobj);
+    json->set("tables", jobj);
     return json;
 }

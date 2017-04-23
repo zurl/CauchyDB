@@ -9,16 +9,16 @@ CreateTableQueryPlan::CreateTableQueryPlan(const std::string &name, SQLSession *
                                                                                                                 sqlSession)
 {
     config = new JSONObject();
-    config->hashMap.emplace("columns", def);
-    config->hashMap.emplace("indices", indices);
+    config->set("columns", def);
+    config->set("indices", indices);
 }
 
 JSON *CreateTableQueryPlan::toJSON()  {
     auto json = new JSONObject();
-    json->hashMap.emplace("type", new JSONString("create"));
-    json->hashMap.emplace("subType", new JSONString("table"));
-    json->hashMap.emplace("name", new JSONString(name));
-    json->hashMap.emplace("config", config);
+    json->set("type", "create");
+    json->set("subType", "table");
+    json->set("name", name);
+    json->set("config", config);
     return json;
 }
 

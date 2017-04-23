@@ -14,8 +14,8 @@ JSON *CreateDataBaseQueryPlan::runQuery(RecordService *recordService)  {
 
 JSON *CreateDataBaseQueryPlan::toJSON()  {
     auto json = new JSONObject();
-    json->hashMap.emplace("type", new JSONString("create"));
-    json->hashMap.emplace("subType", new JSONString("database"));
-    json->hashMap.emplace("name", new JSONString(name));
+    json->set("type", "create");
+    json->set("subType", "database");
+    json->set("name", name);
     return json;
 }
