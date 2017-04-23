@@ -22,9 +22,13 @@ JSON *CreateTableQueryPlan::toJSON()  {
     return json;
 }
 
-JSON *CreateTableQueryPlan::runQuery(RecordService *recordService)  {
+JSON * CreateTableQueryPlan::runQuery(RecordService *recordService)  {
     auto db = sqlSession->getDataBaseModel();
+    if(db->hasTable(name)){
+        return JSONMessage(-1, "Table `" + name + "` is already exists").toJSON();
+    }
     db->createTable(name, config);
-    return new JSONInteger(0);
+    sqlSession->saveMetaData();
+    return JSONMessage(0, "acknowledged").toJSON();
 }
 

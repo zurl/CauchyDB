@@ -34,3 +34,7 @@ DataBaseModel *SQLSession::getDataBaseModel() const {
 MetaDataService *SQLSession::getMetaDataService() const {
     return metaDataService;
 }
+
+void SQLSession::saveMetaData() const {
+    metaDataService->saveIntoFile();
+}

@@ -6,7 +6,7 @@
 
 InsertQueryPlan::InsertQueryPlan(TableModel *tableModel) : tableModel(tableModel), data(new char[tableModel->getLen()]){}
 InsertQueryPlan::~InsertQueryPlan(){
-    delete[] data;
+    delete[] (char *)data;
 }
 
 void *InsertQueryPlan::getData() const {

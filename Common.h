@@ -24,6 +24,18 @@ struct BlockItem{
     void * value;
 };
 
+class JSONMessage{
+    int status;
+    std::string message;
+public:
+    inline JSONMessage(int status, const std::string &message) : status(status), message(message) {}
+    inline JSON * toJSON(){
+        auto json = new JSONObject();
+        json->set("status", status);
+        json->set("message", message);
+        return json;
+    }
+};
 
 class SQLException{
 public:

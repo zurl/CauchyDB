@@ -13,7 +13,7 @@ public:
     inline ColumnModel( JSON * config ){
         JSONObject * data = config->toObject();
         name = data->get("name")->asCString();
-        size = (size_t)data->get("typeSize")->toInteger()->value;
+        size = (size_t)data->get("size")->toInteger()->value;
         const char * typestr = data->get("type")->asCString();
         if( strcmp(typestr, "int") == 0){
             type = ColumnType::Int;

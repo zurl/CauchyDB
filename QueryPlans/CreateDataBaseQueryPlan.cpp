@@ -8,8 +8,12 @@
 CreateDataBaseQueryPlan::CreateDataBaseQueryPlan(const std::string &name, SQLSession *sqlSession) : name(name), sqlSession(sqlSession) {}
 
 JSON *CreateDataBaseQueryPlan::runQuery(RecordService *recordService)  {
+    if(sqlSession->hasDataBase(name)){
+        return JSONMessage(-1, "Database `" + name + "` is already exists").toJSON();
+    }
     sqlSession->getMetaDataService()->createDataBase(name);
-    return new JSONInteger(0);
+    sqlSession->saveMetaData();
+    return JSONMessage(0, "acknowledged").toJSON();
 }
 
 JSON *CreateDataBaseQueryPlan::toJSON()  {

@@ -24,6 +24,7 @@ JSON *SelectQueryPlan::runQuery(RecordService *recordService)  {
             current->put(ColumnTypeUtil::toJSON(col->getType(), (char*)data+col->getOn()));
         }
     });
+    return result;
 }
 
 SelectQueryPlan::~SelectQueryPlan(){

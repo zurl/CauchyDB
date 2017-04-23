@@ -30,6 +30,11 @@ void MetaDataService::createDataBase(const std::string & name){
     dataBases.emplace(name, new DataBaseModel(fileService, name, nullptr));
 }
 
+bool MetaDataService::hasDatabase(const std::string &name){
+    auto iter = dataBases.find(name);
+    return iter != dataBases.end();
+}
+
 JSON * MetaDataService::toJSON() {
     auto json = new JSONObject();
     auto jobj = new JSONObject();
@@ -38,4 +43,12 @@ JSON * MetaDataService::toJSON() {
     }
     json->set("databases", jobj);
     return json;
+}
+
+void MetaDataService::saveIntoFile() {
+    JSON * json = this->toJSON();
+    const char * fname = Configuration::attrCString("meta_file_path");
+    FILE * fp = fopen(fname, "w");
+    fputs(json->toString(true).c_str(), fp);
+    fclose(fp);
 }

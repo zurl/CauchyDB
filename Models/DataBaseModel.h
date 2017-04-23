@@ -19,6 +19,10 @@ public:
     ~DataBaseModel();
     TableModel * getTableByName(const std::string & str);
     void createTable(const std::string & str, JSON * config);
+    inline bool hasTable(const std::string & str){
+        auto iter = tables.find(str);
+        return iter != tables.end();
+    }
     JSON * toJSON();
 };
 

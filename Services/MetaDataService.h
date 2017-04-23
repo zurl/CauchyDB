@@ -19,7 +19,9 @@ public:
     void createDataBase(const std::string & name);
     DataBaseModel * getDataBase(const std::string & name);
     MetaDataService(FileService * fileService);
+    bool hasDatabase(const std::string &name);
     JSON * toJSON();
+    void saveIntoFile();
 };
 
 

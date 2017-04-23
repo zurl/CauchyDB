@@ -23,7 +23,7 @@ public:
 
     JSON *runQuery(RecordService *recordService) override;
 
-    ~SelectQueryPlan();
+    virtual ~SelectQueryPlan();
     JSON *toJSON() override ;
 };
 #endif //DB_SELECTQUERYPLAN_H

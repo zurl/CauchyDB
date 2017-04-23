@@ -29,7 +29,7 @@ using namespace std;
 
 class SQLParser{
     SQLSession * sqlSession;
-    const char * str = "create table test( id int, value char(20), primary key(id) );";
+    const char * str = "create table test2( id int, value char(20), primary key(id) );";
     //const char * str = "insert into test (id, value) values (20, '20');";
     //const char * str = "select id, value from test where value = '20' and value = 'F';";
 public:
@@ -51,7 +51,7 @@ public:
         return x >= '0' && x <= '9';
     }
     inline bool isChar(char x) {
-        return (x >= 'a' && x <= 'z') || (x >= 'A' && x <='Z');
+        return (x >= 'a' && x <= 'z') || (x >= 'A' && x <='Z') || x == '_' || x == '-';
     }
     void tokenize() {
         TokenType status = TokenType::null;
@@ -124,7 +124,7 @@ public:
                     }
                     break;
                 case TokenType::__keyword:
-                    if (!isChar(str[i])) {
+                    if (!isChar(str[i]) && !isNum(str[i])) {
                         tokens.emplace_back(saved_pos, i - 1, TokenType::name);
                         status = TokenType::null;
                         i--;
@@ -419,11 +419,11 @@ public:
         token = tokens[pos]; pos ++; //name
         if( tokencmp(token, "int")){
             json->set("type", "int");
-            json->set("typeSize", 4);
+            json->set("size", 4);
         }
         else if( tokencmp(token, "float")){
             json->set("type", "float");
-            json->set("typeSize", 8);
+            json->set("size", 8);
         }
         else if( tokencmp(token, "char")){
             token = tokens[pos]; pos ++; // (
@@ -435,7 +435,7 @@ public:
             token = tokens[pos]; pos ++; // )
             if(str[token.begin] != ')') throw SQLSyntaxException(2, "syntax error");
             json->set("type", "char");
-            json->set("typeSize", n);
+            json->set("size", n);
         }
         else  throw SQLSyntaxException(2, "syntax error");
         defJson->put(json);

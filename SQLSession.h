@@ -26,6 +26,8 @@ public:
     TableModel * getTable(const std::string & name);
     DataBaseModel *getDataBaseModel() const;
     MetaDataService *getMetaDataService() const;
+    void saveMetaData() const;
+    inline bool hasDataBase(const std::string & name){ return metaDataService->hasDatabase(name);}
 };
 
 
