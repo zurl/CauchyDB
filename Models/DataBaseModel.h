@@ -12,10 +12,11 @@
 
 class DataBaseModel{
     FileService * fileService;
+    BlockService * blockService;
     std::string name;
     std::map<std::string, TableModel * > tables;
 public:
-    DataBaseModel(FileService * fileService, const std::string & name, JSON * config);
+    DataBaseModel(FileService * fileService, BlockService * blockService, const std::string & name, JSON * config);
     ~DataBaseModel();
     TableModel * getTableByName(const std::string & str);
     void createTable(const std::string & str, JSON * config);

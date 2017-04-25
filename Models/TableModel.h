@@ -19,8 +19,9 @@ class TableModel{
     std::map<int, IndexModel> indices;
     std::map<int, size_t> lenTable;
     std::map<std::string, int> keyindex;
+    BlockService * blockService;
 public:
-    TableModel(FileService * fileService, std::string && name, JSON * config);
+    TableModel(FileService * fileService, BlockService * blockService, std::string && name, JSON * config, bool create);
 
     IndexModel * findIndexOn(int cid)  ;
 
@@ -36,11 +37,7 @@ public:
         return name;
     }
 
-    inline int getColumnIndex(const std::string & str) const {
-        auto iter = keyindex.find(str);
-        if( iter == keyindex.end()) throw SQLExecuteException(1, "unknown column");
-        return iter->second;
-    }
+    int getColumnIndex(const std::string & str) const ;
 
     inline size_t getLen() const {
         return len;

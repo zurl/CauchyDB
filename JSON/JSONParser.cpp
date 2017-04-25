@@ -158,7 +158,7 @@ JSON * parseObject(const char * str, size_t & pos){
 
         JSON * value = parseValue(str, pos);
         if( value == nullptr ) { delete jsonObject; return nullptr; }
-        jsonObject->set( std::move(key), value );
+        jsonObject->set( key, value );
 
         while( isEscapeChar(str[pos]) ) pos ++;
 

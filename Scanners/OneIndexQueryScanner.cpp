@@ -10,7 +10,7 @@ OneIndexQueryScanner::OneIndexQueryScanner(AbstractIndexRunner * indexRunner,Rec
 
 void OneIndexQueryScanner::scan(std::function<void(size_t, void *)> consumer)  {
     size_t ptr = indexRunner->findOne(value);
-    if(ptr != 0) consumer(0, recordService->read(tfid, ptr / perBlock, ptr % perBlock, len));
+    if(ptr != 0) consumer(0, recordService->read(tfid, ptr / BLOCK_SIZE, ptr % BLOCK_SIZE, len));
 }
 
 JSON *OneIndexQueryScanner::toJSON()  {

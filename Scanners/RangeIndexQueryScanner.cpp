@@ -12,7 +12,7 @@ withLeft(withLeft), withRight(withRight), on(on) {}
 void RangeIndexQueryScanner::scan(std::function<void(size_t, void *)> consumer)  {
     indexRunner->findByRange(withLeft, left, leq, withRight, right, req,
                              [consumer, this](size_t id, size_t blk){
-                                 recordService->read(tfid, blk / perBlock, blk % perBlock, len);
+                                 recordService->read(tfid, blk / BLOCK_SIZE, blk % BLOCK_SIZE, len);
                              });
 }
 

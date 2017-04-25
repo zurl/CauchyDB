@@ -7,6 +7,10 @@
 #include "Common.h"
 #include "Services/BlockService.h"
 
+
+#define NEXT_NODE(x) ((x)->s[NODE_SIZE])
+
+
 const int NODE_DELETED = 2;
 
 const char * itos(int i);
@@ -20,9 +24,9 @@ public:
 
 template<typename Type>
 const int NodeSize<Type>::NODE_SIZE = (BLOCK_SIZE - 4 - sizeof(size_t) ) / (sizeof(Type) + sizeof(size_t));
-
+#define NODE_SIZE_HALF ((NODE_SIZE + 1) / 2)
 template<typename Type>
-struct Node{
+struct BasicNode{
     short isLeaf; short size;
     Type v[NodeSize<Type>::NODE_SIZE];
     size_t s[NodeSize<Type>::NODE_SIZE + 1];
@@ -30,13 +34,11 @@ struct Node{
 
 
 
-#define NEXT_NODE(x) ((x)->s[NODE_SIZE])
-#define NODE_SIZE_HALF ((NODE_SIZE + 1) / 2)
 
 template<typename Type>
 class BPlusTree{
     static const int NODE_SIZE;
-    using Node = Node<Type>;
+    using Node = BasicNode<Type>;
 
     BlockItem * root = 0;
     std::vector<BlockItem *> stack; // record the searching chain
@@ -52,10 +54,12 @@ public:
         root = blockService->getBlock(fid, 0);
     }
 
+
+
     BlockItem * createNode(){
         size_t offset = blockService->allocBlock(fid);
         BlockItem * blockItem = blockService->getBlock(fid, offset);
-        printf("create node at fid=%d, offset=%d\n", blockItem->fid, blockItem->offset);
+        printf("create node at fid=%d, offset=%d\n", blockItem->fid, (int)blockItem->offset);
         return blockItem;
     }
 
@@ -76,7 +80,7 @@ public:
         //printf("asd");
     }
     // [INSERT] insert the overflow index-node into non-leaf node
-    void insertInto(const Type v, BlockItem * next){
+    void insertInto( Type v, BlockItem * next){
         if( now == -1){ // root
             BlockItem * tempBlk = createNode();
             memcpy(tempBlk->value, stack[0]->value, BLOCK_SIZE);
@@ -185,7 +189,7 @@ public:
         return xBlk;
     }
 
-    BlockItem * findNode(Type v){
+    BlockItem * findNode( Type v){
         now = -1;
         stack.clear();
         stackPos.clear();
@@ -195,7 +199,7 @@ public:
         // search the target node for insertion by linear
         // recursive search
         while(!x->isLeaf){
-            assert(now <= 30);
+            assert(now <= 30000);
             ++now;
             stack.push_back(xBlk);
             if( TypeUtil<Type>::cmp(x->v[x->size - 1], v) <= 0 ){ // v <=
@@ -217,7 +221,7 @@ public:
         return xBlk;
     }
 
-    size_t findOne(Type key){
+    size_t findOne( Type key){
         BlockItem * xBlk = findNode(key);
         Node * node = (Node *) xBlk->value;
         for(size_t i = 0; i < node->size; i++){
@@ -229,8 +233,8 @@ public:
     }
 
     size_t findByRange(
-            bool withLeft, Type left, bool leftEqu,
-            bool withRight, Type right, bool rightEqu,
+            bool withLeft,  Type left, bool leftEqu,
+            bool withRight,  Type right, bool rightEqu,
             std::function<void(size_t, size_t)> consumer
     ){
         size_t counter = 0;
@@ -274,7 +278,8 @@ public:
         assert(0);
     }
 
-    bool insert(const Type key, size_t value){
+    bool insert( Type key, size_t value){
+        printf("haha insert~!");
         BlockItem * xBlk = findNode(key);
         Node * x = (Node *)xBlk->value;
         if( x->size < NODE_SIZE){
@@ -456,7 +461,7 @@ public:
         }
     }
 
-    bool remove(const Type v){
+    bool remove( Type v){
         BlockItem * xBlk = findNode(v);
         Node * x = (Node *) xBlk->value;
         int pos;
@@ -555,6 +560,17 @@ public:
         parentBlk->modified = 1;
         return true;
     }
+
+    void initialize(){
+        Node * rootPtr;
+        root = blockService->getBlock(fid, 0);
+        rootPtr = (Node *)root->value;
+        NEXT_NODE(rootPtr) = 0;
+        rootPtr->isLeaf = true;
+        rootPtr->size = 0;
+        root->modified = 1;
+    }
+
     void DO_LINEAR_TEST(){
         printf("====linear test===\n");
         BlockItem * blk = findNode("1");

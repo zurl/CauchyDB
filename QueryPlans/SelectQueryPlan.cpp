@@ -17,12 +17,13 @@ SelectQueryPlan::SelectQueryPlan(TableModel * tableModel,
 
 JSON *SelectQueryPlan::runQuery(RecordService *recordService)  {
     auto result = new JSONArray();
-    queryScanner->scan([this](size_t id, void *data){
+    queryScanner->scan([this, result](size_t id, void *data){
         auto current = new JSONArray();
         for(auto & cid : columns){
             auto col = tableModel->getColumn(cid);
             current->put(ColumnTypeUtil::toJSON(col->getType(), (char*)data+col->getOn()));
         }
+        result->put(current);
     });
     return result;
 }

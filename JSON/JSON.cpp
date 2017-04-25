@@ -141,19 +141,15 @@ JSONArray * JSON::toArray(){
     return jsonArray;
 }
 
-const char * JSON::asCString(){
-    JSONString * jsonString = (JSONString *) this;
-    if(jsonString == nullptr)return nullptr;
-    else return jsonString->str.c_str();
-}
-
 char jsonBuffer [ JSON_BUFFER_SIZE ];
 JSON * JSON::fromFile(const char * fileName){
     FILE * file = fopen(fileName, "r");
     if( !file )return nullptr;
     size_t now = 0;
-    jsonBuffer[0] = fgetc(file);
-    while(jsonBuffer[now] != EOF)jsonBuffer[++now] = fgetc(file);
+    int c = 0;
+    c = fgetc(file);
+    while(c != EOF){jsonBuffer[now++] = (char)c; c= fgetc(file);}
+    jsonBuffer[now] = 0;
     JSON * json = JSON::parse(jsonBuffer);
     fclose(file);
     return json;
@@ -165,4 +161,10 @@ bool JSON::saveIntoFile(const char * fileName, bool format){
     fputs(this->toString(format).c_str(), file);
     fclose(file);
     return true;
+}
+
+JSONString *JSON::toJString() {
+    if( this->type() != JSON::Type::String) return nullptr;
+    JSONString * jsonString = (JSONString *)this;
+    return jsonString;
 }

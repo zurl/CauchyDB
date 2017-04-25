@@ -5,5 +5,4 @@
 #include "QueryScanner.h"
 
 QueryScanner::QueryScanner(size_t len, RecordService *recordService) : len(len), recordService(recordService) {
-    perBlock = BLOCK_SIZE / len;
 }

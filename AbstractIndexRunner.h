@@ -9,6 +9,7 @@
 
 class AbstractIndexRunner{
 public:
+    virtual void initialize() = 0;
     virtual ColumnType getType() = 0;
     virtual int insert(void * key, size_t value) = 0;
     virtual size_t findOne(void * key) = 0;

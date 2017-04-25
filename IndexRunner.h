@@ -48,11 +48,10 @@ public:
     IndexRunner(int fid, BlockService *blockService) : bPlusTree(blockService, fid){}
 
     int insert(void * key, size_t value) override {
-        bPlusTree.insert(IndexRunnerWrapper<T>::convert(key), value);
-        return 1;
+        return bPlusTree.insert(IndexRunnerWrapper<T>::convert(key), value);
     }
 
-    size_t findOne(void * key){
+    size_t findOne(void * key) override {
         return bPlusTree.findOne(IndexRunnerWrapper<T>::convert(key));
     }
 
@@ -60,7 +59,7 @@ public:
             bool withLeft, void * left, bool leftEqu,
             bool withRight, void * right, bool rightEqu,
             std::function<void(size_t, size_t)> consumer
-    ){
+    ) override {
         return bPlusTree.findByRange(
                 withLeft, IndexRunnerWrapper<T>::convert(left), leftEqu,
                 withRight, IndexRunnerWrapper<T>::convert(right), rightEqu,
@@ -70,6 +69,10 @@ public:
 
     virtual ColumnType getType() override {
         return IndexRunnerWrapper<T>::getType();
+    }
+
+    void initialize() override {
+        bPlusTree.initialize();
     }
 };
 

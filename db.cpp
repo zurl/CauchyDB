@@ -29,11 +29,12 @@ using namespace std;
 
 class SQLParser{
     SQLSession * sqlSession;
-    const char * str = "create table test2( id int, value char(20), primary key(id) );";
+    const char * str = nullptr;// = "create table test2( id int, value char(20), primary key(id) );";
     //const char * str = "insert into test (id, value) values (20, '20');";
     //const char * str = "select id, value from test where value = '20' and value = 'F';";
 public:
     SQLParser(SQLSession *sqlSession) : sqlSession(sqlSession) {}
+
 
     enum class TokenType {
         integer, real, name, string, ope, null, __keyword
@@ -344,6 +345,7 @@ public:
         if(!tokencmp(token, "into")) throw SQLSyntaxException(0, "syntax error");
         pos++;token = tokens[pos]; //into
         TableModel * table = sqlSession->getTable(std::string(str, token.begin, token.end - token.begin + 1));
+        if(table == nullptr)throw SQLExecuteException(0, "no table");
         pos++;token = tokens[pos]; //name
         if(!tokencmp(token, "("))throw SQLSyntaxException(0, "syntax error");
         pos++;token = tokens[pos];// (
@@ -362,6 +364,7 @@ public:
         auto result = new InsertQueryPlan(table);
         int cur = 0;
         char * data = (char *)result->getData();
+        char * sdata = (char *)result->getData();
         while( pos < tokens.size()) {
             auto columnModel = table->getColumn(columns[cur]);
             if(token.type == TokenType::integer){
@@ -380,7 +383,7 @@ public:
             else if(token.type == TokenType::real){
                 if( columnModel->getType() != ColumnType::Float ) throw SQLTypeException(3, "type error");
                 sscanf(str + token.begin, "%lf", (double *)data);
-                data += 4;
+                data += 8;
             }
             else  throw SQLSyntaxException(2, "syntax error");
             pos ++; token = tokens[pos]; // value;
@@ -389,6 +392,8 @@ public:
             pos ++; token = tokens[pos]; // ,
             cur ++;
         }
+        printf("=====\n");
+        for(int i=0;i<=10;i++)putchar(sdata[i]);
         pos ++; token = tokens[pos]; // )
         if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
         pos ++; token = tokens[pos]; // ;
@@ -472,18 +477,23 @@ public:
         throw SQLSyntaxException(2, "syntax error");
     }
 
-    QueryPlan * parseSQLStatement(){
+    QueryPlan * parseSQLStatement(const char * str){
+        this->str = str;
+        tokens.clear();
+        this->tokenize();
         pos = 0;
         int len = tokens[pos].end - tokens[pos].begin + 1;
         Token token = tokens[pos];pos++;
         if( len == 6){
             if(tokencmp(token, "select")){
+                if( sqlSession->getDataBaseModel() == nullptr)throw SQLExecuteException(0, "no database selected");
                 return parseSelectStatement();
             }
             else if( tokencmp(token, "delete")){
                 //TODO:: delete
             }
             else if( tokencmp(token, "insert")){
+                if( sqlSession->getDataBaseModel() == nullptr)throw SQLExecuteException(0, "no database selected");
                 return parseInsertStatement();
             }
             else if( tokencmp(token, "create")){
@@ -546,9 +556,23 @@ public:
         // Load SQLInterpreterService { Inject QueryBuilderSerice }
         Configuration::initialize();
         fileService = new FileService();
-        metaDataService = new MetaDataService(fileService);
         blockService = new BlockService(fileService);
         recordService = new RecordService(blockService);
+        metaDataService = new MetaDataService(fileService, blockService);
+    }
+
+    void testSQLBatch(){
+        auto session = new SQLSession(metaDataService, nullptr, recordService, blockService);
+        auto parser = new SQLParser(session);
+        char x[256];
+        session->loadTable("fuck");
+        while(true){
+            cin.getline(x, 210);
+            if(x[0] == '@')break;
+            auto sql = parser->parseSQLStatement(x);
+            std::cout<<sql->toJSON()->toString(true)<<endl;
+            std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
+        }
     }
 
     void testSQL(){
@@ -557,10 +581,10 @@ public:
         auto parser = new SQLParser(session);
         parser->tokenize();
         parser->test();
-        auto sql = parser->parseSQLStatement();
-        std::cout<<sql->toJSON()->toString(true)<<endl;
-        std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
-        std::cout<<metaDataService->toJSON()->toString(true)<<endl;
+        //auto sql = parser->parseSQLStatement();
+//        std::cout<<sql->toJSON()->toString(true)<<endl;
+//        std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
+//        std::cout<<metaDataService->toJSON()->toString(true)<<endl;
     }
 
 #define __fo(x) ((x) / BLOCK_SIZE )
@@ -688,7 +712,7 @@ const char * itos(int i){
 int main(){
     ApplicationContainer applicationContainer;
     applicationContainer.start();
-    applicationContainer.testSQL();
+    applicationContainer.testSQLBatch();
     int fid = applicationContainer.fileService->openFile("test.idx");
 //    BPlusTree<char[16]> bPlusTree(applicationContainer.blockService, fid);
 //    bPlusTree.T_BPLUS_TEST();

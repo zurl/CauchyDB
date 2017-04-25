@@ -7,6 +7,7 @@
 
 #include "../Services/FileService.h"
 #include "../AbstractIndexRunner.h"
+#include "../IndexRunner.h"
 
 
 class IndexModel{
@@ -15,12 +16,12 @@ class IndexModel{
     FileService * fileService;
     AbstractIndexRunner * indexRunner;
     std::string name;
+    ColumnType columnType;
+    int columnSize;
     public:
-    inline IndexModel(FileService * fileService, const std::string & fname, const std::string & name, JSON * config, size_t on):name(name){
-        this->fileService = fileService;
-        fid = fileService->openFile((fname + ".cdi").c_str());
-        this->on = on;
-    }
+    IndexModel(FileService * fileService, BlockService * blockService,
+                      const std::string & fname, const std::string & name,
+                      JSON * config, size_t on, bool create, ColumnType columnType, int columnSize);
 
     inline int getFid() const {
         return fid;

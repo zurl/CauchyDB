@@ -12,13 +12,14 @@
 
 class MetaDataService{
     FileService * fileService;
+    BlockService * blockService;
     JSON * data;
     std::map<std::string, DataBaseModel *> dataBases;
 public:
     ~MetaDataService();
     void createDataBase(const std::string & name);
     DataBaseModel * getDataBase(const std::string & name);
-    MetaDataService(FileService * fileService);
+    MetaDataService(FileService * fileService, BlockService * blockService);
     bool hasDatabase(const std::string &name);
     JSON * toJSON();
     void saveIntoFile();

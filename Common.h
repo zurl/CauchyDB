@@ -9,12 +9,13 @@
 #include <cstdio>
 #include <unordered_map>
 #include <list>
+#include <functional>
 #include <vector>
 #include <ctime>
 #include <cassert>
 #include <map>
 #include "JSON/JSON.h"
-const int BLOCK_SIZE = 4 + sizeof(size_t) + (16 + sizeof(size_t)) * 5;
+const int BLOCK_SIZE = 1024;
 
 struct BlockItem{
     int fid;
@@ -69,22 +70,16 @@ class TypeUtil {
 public:
     using ref_type = char *;
     using Conv = const char *;
-    static void set(Type &a, Type &b){
+    static void set(Type &a, const Type &b){
         strcpy(a, b);
     }
     static void set(Type &a, const char * b){
         strcpy(a, b);
     }
-    static int cmp(Type a, Type b){
+    static int cmp(const Type a, const Type b){
         int ret = strcmp((const char *)a, (const char *)b);
         if ( ret > 0) return 1;
         if ( ret == 0) return 0;
-        return -1;
-    }
-    static int cmp(Type a, const char * b) {
-        int ret = strcmp((const char *) a, b);
-        if (ret > 0) return 1;
-        if (ret == 0) return 0;
         return -1;
     }
     static JSON * toJSON(Type v){
@@ -99,7 +94,10 @@ public:
 template<>
 class TypeUtil<int>{
 public:
-    static int cmp(int & a, int & b){
+    static void set(int &a, const int &b){
+        a = b;
+    }
+    static int cmp(const int & a, const int & b){
         if( a < b ) return 1;
         if( a > b ) return -1;
         return 0;
@@ -108,15 +106,15 @@ public:
         return new JSONInteger(v);
     }
     using ref_type = int;
-    static void initial(int & dst, int & src){
-        dst = src;
-    }
 };
 
 template<>
 class TypeUtil<double>{
 public:
-    static int cmp(double & a, double & b){
+    static void set(double &a, const double &b){
+        a = b;
+    }
+    static int cmp(const double & a, const double & b){
         if( a < b ) return 1;
         if( a > b ) return -1;
         return 0;
@@ -125,9 +123,6 @@ public:
         return new JSONDouble(v);
     }
     using ref_type = double;
-    static void initial(double & dst, double & src){
-        dst = src;
-    }
 };
 
 enum class ColumnType{

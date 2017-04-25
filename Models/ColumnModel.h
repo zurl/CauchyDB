@@ -10,11 +10,12 @@
 class ColumnModel{
 
 public:
-    inline ColumnModel( JSON * config ){
+    inline ColumnModel( JSON * config, size_t on ){
         JSONObject * data = config->toObject();
-        name = data->get("name")->asCString();
+        name = data->get("name")->toJString()->str.c_str();
         size = (size_t)data->get("size")->toInteger()->value;
-        const char * typestr = data->get("type")->asCString();
+        this->on = on;
+        const char * typestr = data->get("type")->toJString()->str.c_str();
         if( strcmp(typestr, "int") == 0){
             type = ColumnType::Int;
         }

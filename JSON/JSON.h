@@ -13,7 +13,7 @@ const size_t JSON_BUFFER_SIZE = 10888897;
 
 class JSONInteger; class JSONDouble;
 class JSONArray; class JSONObject;
-class JSONBoolean;
+class JSONBoolean;class JSONString;
 
 class JSON{
     public:
@@ -30,10 +30,10 @@ class JSON{
     JSON * get(const char * index);
     virtual std::string toString(bool format = false, size_t indent = 0) = 0;
     JSONInteger * toInteger();
+    JSONString * toJString();
     JSONDouble * toDouble();
     JSONArray * toArray();
     JSONObject * toObject();
-    const char * asCString();
     virtual ~JSON() = default;
     virtual Type type() = 0;
 };

@@ -12,7 +12,6 @@
 class QueryScanner{
 protected:
     size_t len;
-    size_t perBlock;
     RecordService * recordService;
 public:
     QueryScanner(size_t len, RecordService *recordService);

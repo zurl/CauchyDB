@@ -5,13 +5,13 @@
 #include "DataBaseModel.h"
 
 
-DataBaseModel::DataBaseModel(FileService * fileService, const std::string & name, JSON * config)
-:fileService(fileService),name(name){
+DataBaseModel::DataBaseModel(FileService * fileService, BlockService * blockService, const std::string & name, JSON * config)
+:fileService(fileService),name(name),blockService(blockService){
     if( config != nullptr){
         JSONObject * data = config->get("tables")->toObject();
         for(auto & table: data->getHashMap()){
             tables.emplace(table.first,
-                           new TableModel(fileService, name + "_" + table.first + ".ct", table.second));
+                           new TableModel(fileService, blockService, name + "_" + table.first + ".ct", table.second, false));
         }
     }
 }
@@ -25,9 +25,8 @@ TableModel * DataBaseModel::getTableByName(const std::string & str){
 }
 
 void DataBaseModel::createTable(const std::string &str, JSON *config) {
-    fileService->createFile((name + "_" + str + ".ct").c_str());
     tables.emplace(str,
-                   new TableModel(fileService, name + "_" + str + ".ct", config));
+                   new TableModel(fileService, blockService, name + "_" + str + ".ct", config, true));
 }
 
 JSON *DataBaseModel::toJSON() {
