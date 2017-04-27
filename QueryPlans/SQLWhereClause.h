@@ -13,6 +13,7 @@ class SQLWhereClause{
 public:
     void addCondition(SQLCondition * cond);
     JSON * toJSON(TableModel * tableModel);
+    bool filter(void * data);
 };
 
 

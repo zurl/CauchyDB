@@ -22,7 +22,7 @@ public:
 
     RecordService *getRecordService() const ;
     BlockService *getBlockService() const ;
-    void loadTable(const std::string & name);
+    void loadDatabase(const std::string &name);
     TableModel * getTable(const std::string & name);
     DataBaseModel *getDataBaseModel() const;
     MetaDataService *getMetaDataService() const;

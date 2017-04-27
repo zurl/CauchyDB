@@ -131,6 +131,18 @@ enum class ColumnType{
 
 class ColumnTypeUtil{
 public:
+    static bool equal(ColumnType type, )
+    static std::string toString(ColumnType type){
+        if( type == ColumnType::Char ){
+            return "char";
+        }
+        else if( type == ColumnType::Int){
+            return "int";
+        }
+        else {
+            return "double";
+        }
+    }
     static JSON * toJSON(ColumnType type, void * data){
         if( data == nullptr) return new JSONNull();
         if( type == ColumnType::Char ){

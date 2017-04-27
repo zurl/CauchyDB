@@ -18,8 +18,13 @@ public:
     Type type;
     int cid;
     void * value;
-    SQLCondition(Type type, int cid, void *value);
+    int on;
+    ColumnType columnType;
+    int columnSize;
+
+    SQLCondition(TableModel * tableModel, Type type, int cid, void *value);
     JSON * toJSON(TableModel * tableModel);
+    bool filter(void * data);
 };
 
 

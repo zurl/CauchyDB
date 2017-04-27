@@ -4,7 +4,7 @@ project(db)
 set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES
-        db.cpp
+        main.cpp
         JSON/JSON.cpp
         JSON/JSON.h
         JSON/JSONParser.cpp
@@ -54,6 +54,6 @@ set(SOURCE_FILES
         QueryPlans/CreateTableQueryPlan.cpp
         QueryPlans/CreateTableQueryPlan.h
         QueryPlans/CreateDataBaseQueryPlan.cpp
-        QueryPlans/CreateDataBaseQueryPlan.h)
+        QueryPlans/CreateDataBaseQueryPlan.h QueryPlans/InterpreterQueryPlan.cpp QueryPlans/InterpreterQueryPlan.h QueryPlans/AbstractSQLCondition.h QueryPlans/BasicSQLCondition.h QueryPlans/GreaterSQLCondition.h)
 
 add_executable(db ${SOURCE_FILES})
