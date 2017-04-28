@@ -27,22 +27,24 @@ public:
     template<class Q = T>
     typename std::enable_if<!std::is_same<Q, char *>::value>::type destroy()
     {
+
     }
 
     ~BasicSQLCondition(){ destroy(); }
 
     virtual Type getType() override = 0;
 
-    void * getValue() override {
+    inline void * getValue() override {
         return SQLConditionUtils<T>::toVoid(value);
     }
 
-    int getCid() override {
+    inline int getCid() override {
         return cid;
     }
 
-    virtual bool filter(void *data) = 0;
-    virtual JSON *toJSON(TableModel *tableModel){
+    virtual bool filter(void *data) override = 0;
+
+    virtual JSON *toJSON(TableModel *tableModel) override {
         JSONObject * jobj = new JSONObject();
         jobj->set("value", SQLConditionUtils<T>::toJSON(value, size));
         return (JSON *)jobj;

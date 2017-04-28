@@ -7,6 +7,10 @@
 
 #include "AbstractSQLCondition.h"
 #include "GreaterSQLCondition.h"
+#include "EqualSQLCondition.h"
+#include "NotEqualSQLCondition.h"
+#include "LessOrEqualSQLCondition.h"
+#include "LessSQLCondition.h"
 #include "GreaterOrEqualSQLCondition.h"
 
 class AbstractSQLConditionFactory{
@@ -29,13 +33,46 @@ public:
         switch(type){
             case AbstractSQLCondition::Type::gt:
                 return new GreaterSQLCondition<T>(
-                        *(T *)data,
+                        SQLConditionUtils<T>::extract(data),
                         cid,
                         on,
                         size
                 );
-
-            default: return nullptr;
+            case AbstractSQLCondition::Type::neq:
+                return new NotEqualSQLCondition<T>(
+                        SQLConditionUtils<T>::extract(data),
+                        cid,
+                        on,
+                        size
+                );
+            case AbstractSQLCondition::Type::lte:
+                return new LessOrEqualSQLCondition<T>(
+                        SQLConditionUtils<T>::extract(data),
+                        cid,
+                        on,
+                        size
+                );
+            case AbstractSQLCondition::Type::lt:
+                return new LessSQLCondition<T>(
+                        SQLConditionUtils<T>::extract(data),
+                        cid,
+                        on,
+                        size
+                );
+            case AbstractSQLCondition::Type::gte:
+                return new GreaterOrEqualSQLCondition<T>(
+                        SQLConditionUtils<T>::extract(data),
+                        cid,
+                        on,
+                        size
+                );
+            case AbstractSQLCondition::Type::eq:
+                return new EqualSQLCondition<T>(
+                        SQLConditionUtils<T>::extract(data),
+                        cid,
+                        on,
+                        size
+                );
         }
     }
 
@@ -43,29 +80,6 @@ public:
 
     }
 };
-
-template<>
-class SQLConditionFactory<char *> : public AbstractSQLConditionFactory{
-public:
-    AbstractSQLCondition *createSQLCondition(
-            AbstractSQLCondition::Type type, int size, int cid, int on, void *data) override {
-        switch(type){
-            case AbstractSQLCondition::Type::gt:
-                return new GreaterSQLCondition<char *>(
-                        (char *)data,
-                        cid,
-                        on,
-                        size
-                );
-            default: return nullptr;
-        }
-    }
-
-    ~SQLConditionFactory() override {
-
-    }
-};
-
 
 
 #endif //DB_SQLCONDITIONFACTORY_H

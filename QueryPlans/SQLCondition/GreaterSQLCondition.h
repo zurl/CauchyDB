@@ -29,7 +29,7 @@ public:
         return false;
     }
 
-    inline virtual bool filter(void * data){
+    inline virtual bool filter(void * data) override {
         return this->basicFilter(data);
     }
 

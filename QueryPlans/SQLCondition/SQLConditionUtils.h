@@ -11,33 +11,42 @@
 template<typename T>
 class SQLConditionUtils{
 public:
-    static JSON * toJSON(T value, int size){
+    inline static JSON * toJSON(T value, int size){
         return new JSONString(std::string(value, size));
     }
-    static void * toVoid(T & value){
+    inline static void * toVoid(T & value){
         return (void *)value;
+    }
+    inline static char * extract(void * data){
+        return (char *)data;
     }
 };
 
 template<>
 class SQLConditionUtils<int>{
 public:
-    static JSON * toJSON(int value, int size){
+    inline static JSON * toJSON(int value, int size){
         return new JSONInteger(value);
     }
-    static void * toVoid(int & value){
+    inline static void * toVoid(int & value){
         return (void *)&value;
+    }
+    inline static int extract(void * data){
+        return *(int *)data;
     }
 };
 
 template<>
 class SQLConditionUtils<double>{
 public:
-    static JSON * toJSON(double value, int size){
+    inline static JSON * toJSON(double value, int size){
         return new JSONDouble(value);
     }
-    static void * toVoid(double & value){
+    inline static void * toVoid(double & value){
         return (void *)&value;
+    }
+    inline static double extract(void * data){
+        return *(double *)data;
     }
 };
 

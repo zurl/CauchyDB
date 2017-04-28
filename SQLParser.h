@@ -25,7 +25,7 @@ class SQLParser{
 
     AbstractSQLConditionFactory * IntegerSQLConditionFactory = new SQLConditionFactory<int>();
     AbstractSQLConditionFactory * DoubleSQLConditionFactory = new SQLConditionFactory<double>();
-    AbstractSQLConditionFactory * CharSQLConditionFactory = new SQLConditionFactory<char>();
+    AbstractSQLConditionFactory * CharSQLConditionFactory = new SQLConditionFactory<char *>();
 
 public:
     SQLParser(SQLSession *sqlSession) : sqlSession(sqlSession) {}

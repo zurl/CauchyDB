@@ -18,8 +18,9 @@ BlockService *SQLSession::getBlockService() const {
     return blockService;
 }
 
-void SQLSession::loadDatabase(const std::string &name){
+bool SQLSession::loadDatabase(const std::string &name){
     dataBaseModel = metaDataService->getDataBase(name);
+    return dataBaseModel != nullptr;
 }
 
 TableModel * SQLSession::getTable(const std::string & name){

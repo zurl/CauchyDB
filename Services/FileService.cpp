@@ -34,7 +34,7 @@ int FileService::allocBlock(int fileID){
 void FileService::writeBlock(int fileID, int startOffset, void * data){
     assert(fileID < files.size() && fileID >= 0);
     FILE * fp = files[fileID];
-    int a = fseek(fp, startOffset * BLOCK_SIZE, SEEK_SET);
+    fseek(fp, startOffset * BLOCK_SIZE, SEEK_SET);
     fwrite(data, BLOCK_SIZE, 1, fp);
     fflush(fp);
 }

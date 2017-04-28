@@ -23,6 +23,13 @@ public:
     bool hasDatabase(const std::string &name);
     JSON * toJSON();
     void saveIntoFile();
+    inline JSON * getDatabases(){
+        JSONArray * jarr = new JSONArray();
+        for(auto & pair : dataBases){
+            jarr->put(new JSONString(pair.first));
+        }
+        return jarr;
+    }
 };
 
 

@@ -24,6 +24,13 @@ public:
         auto iter = tables.find(str);
         return iter != tables.end();
     }
+    inline JSON * getTables(){
+        JSONArray * jarr = new JSONArray();
+        for(auto & pair : tables){
+            jarr->put(new JSONString(pair.first));
+        }
+        return jarr;
+    }
     JSON * toJSON();
 };
 

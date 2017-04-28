@@ -61,13 +61,17 @@ public:
         auto session = new SQLSession(metaDataService, nullptr, recordService, blockService);
         auto parser = new SQLParser(session);
         char x[256];
-        session->loadDatabase("fuck");
+        //session->loadDatabase("fuck");
         while(true){
             cin.getline(x, 210);
             if(x[0] == '@')break;
-            auto sql = parser->parseSQLStatement(x);
-            std::cout<<sql->toJSON()->toString(true)<<endl;
-            std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
+            try{
+                auto sql = parser->parseSQLStatement(x);
+                std::cout<<sql->toJSON()->toString(true)<<endl;
+                std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
+            }catch(SQLException & e){
+                std::cout<<"[ERROR]("<<e.code<<") : "<<e.message<<std::endl;
+            }
         }
     }
 
@@ -209,7 +213,7 @@ int main(){
     ApplicationContainer applicationContainer;
     applicationContainer.start();
     applicationContainer.testSQLBatch();
-    int fid = applicationContainer.fileService->openFile("test.idx");
+    //int fid = applicationContainer.fileService->openFile("test.idx");
 //    BPlusTree<char[16]> bPlusTree(applicationContainer.blockService, fid);
 //    bPlusTree.T_BPLUS_TEST();
     //applicationContainer.testBlock();

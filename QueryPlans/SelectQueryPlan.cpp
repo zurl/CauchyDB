@@ -9,7 +9,7 @@ SelectQueryPlan::SelectQueryPlan(TableModel * tableModel,
                 QueryScanner *queryScanner,
                 const std::vector<std::string> &columns,
                 SQLWhereClause *where)
-        : tableModel(tableModel), queryScanner(queryScanner), where(where) {
+        :queryScanner(queryScanner), tableModel(tableModel),  where(where) {
     for(auto & key : columns){
         this->columns.emplace_back(tableModel->getColumnIndex(key));
     }
@@ -18,6 +18,7 @@ SelectQueryPlan::SelectQueryPlan(TableModel * tableModel,
 JSON *SelectQueryPlan::runQuery(RecordService *recordService)  {
     auto result = new JSONArray();
     queryScanner->scan([this, result](int id, void *data){
+        if(!where->filter(data)) return;
         auto current = new JSONArray();
         for(auto & cid : columns){
             auto col = tableModel->getColumn(cid);

@@ -4,6 +4,7 @@
 
 #include "SQLParser.h"
 #include "QueryPlans/SQLCondition/SQLConditionFactory.h"
+#include "QueryPlans/InterpreterQueryPlan.h"
 
 InsertQueryPlan *SQLParser::parseInsertStatement() {
     //auto insertQueryPlan = new InsertQueryPlan();
@@ -149,26 +150,38 @@ QueryPlan *SQLParser::parseSQLStatement(const char *str) {
     tokens.clear();
     this->tokenize();
     pos = 0;
-    int len = tokens[pos].end - tokens[pos].begin + 1;
     Token token = tokens[pos];pos++;
-    if( len == 6){
-        if(tokencmp(token, "select")){
-            if( sqlSession->getDataBaseModel() == nullptr)throw SQLExecuteException(0, "no database selected");
-            return parseSelectStatement();
-        }
-        else if( tokencmp(token, "delete")){
-            //TODO:: delete
-        }
-        else if( tokencmp(token, "insert")){
-            if( sqlSession->getDataBaseModel() == nullptr)throw SQLExecuteException(0, "no database selected");
-            return parseInsertStatement();
-        }
-        else if( tokencmp(token, "create")){
-            return parseCreateStatement();
-        }
-        else{
-            throw SQLSyntaxException(0, "keyword error");
-        }
+    if(tokencmp(token, "select")){
+        if( sqlSession->getDataBaseModel() == nullptr)throw SQLExecuteException(0, "no database selected");
+        return parseSelectStatement();
+    }
+    else if( tokencmp(token, "delete")){
+        //TODO:: delete
+    }
+    else if( tokencmp(token, "insert")){
+        if( sqlSession->getDataBaseModel() == nullptr)throw SQLExecuteException(0, "no database selected");
+        return parseInsertStatement();
+    }
+    else if( tokencmp(token, "create")){
+        return parseCreateStatement();
+    }
+    else if( tokencmp(token, "using")){
+        token = tokens[pos]; pos ++;// database;
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string name(str, token.begin, token.end - token.begin + 1);
+        return new InterpreterQueryPlan("using", name, sqlSession);
+    }
+    else if( tokencmp(token, "show")){
+        token = tokens[pos]; pos ++;// database;
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string name(str, token.begin, token.end - token.begin + 1);
+        return new InterpreterQueryPlan("show", name, sqlSession);
+    }
+    else if( tokencmp(token, "describe")){
+        token = tokens[pos]; pos ++;// database;
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string name(str, token.begin, token.end - token.begin + 1);
+        return new InterpreterQueryPlan("describe", name, sqlSession);
     }
     else{
         throw SQLSyntaxException(0, "keyword error");
