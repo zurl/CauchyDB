@@ -23,13 +23,13 @@ public:
 
 
 template<typename Type>
-const int NodeSize<Type>::NODE_SIZE = (BLOCK_SIZE - 4 - sizeof(size_t) ) / (sizeof(Type) + sizeof(size_t));
+const int NodeSize<Type>::NODE_SIZE = (BLOCK_SIZE - 4 - sizeof(int) ) / (sizeof(Type) + sizeof(int));
 #define NODE_SIZE_HALF ((NODE_SIZE + 1) / 2)
 template<typename Type>
 struct BasicNode{
     short isLeaf; short size;
     Type v[NodeSize<Type>::NODE_SIZE];
-    size_t s[NodeSize<Type>::NODE_SIZE + 1];
+    int s[NodeSize<Type>::NODE_SIZE + 1];
 };
 
 
@@ -57,7 +57,7 @@ public:
 
 
     BlockItem * createNode(){
-        size_t offset = blockService->allocBlock(fid);
+        int offset = blockService->allocBlock(fid);
         BlockItem * blockItem = blockService->getBlock(fid, offset);
         printf("create node at fid=%d, offset=%d\n", blockItem->fid, (int)blockItem->offset);
         return blockItem;
@@ -221,10 +221,10 @@ public:
         return xBlk;
     }
 
-    size_t findOne( Type key){
+    int findOne( Type key){
         BlockItem * xBlk = findNode(key);
         Node * node = (Node *) xBlk->value;
-        for(size_t i = 0; i < node->size; i++){
+        for(int i = 0; i < node->size; i++){
             if(TypeUtil<Type>::cmp(node->v[i], key) == 0){
                 return node->s[i];
             }
@@ -232,20 +232,20 @@ public:
         return 0;
     }
 
-    size_t findByRange(
+    int findByRange(
             bool withLeft,  Type left, bool leftEqu,
             bool withRight,  Type right, bool rightEqu,
-            std::function<void(size_t, size_t)> consumer
+            std::function<void(int, int)> consumer
     ){
-        size_t counter = 0;
+        int counter = 0;
         BlockItem * xBlk;
         Node * node;
-        size_t now = 0;
+        int now = 0;
         if( withLeft ) {
             xBlk = findNode(left);
             node = (Node *) xBlk->value;
             bool find = false;
-            for (size_t i = 0; i < node->size; i++) {
+            for (int i = 0; i < node->size; i++) {
                 if (TypeUtil<Type>::cmp(node->v[i], left) > 0
                     || (TypeUtil<Type>::cmp(node->v[i], left) == 0 && leftEqu)) {
                     find = true;
@@ -263,7 +263,7 @@ public:
             node = (Node *) xBlk->value;
         }
         while( true ){
-            for(size_t i = now; i < node->size; i++){
+            for(int i = now; i < node->size; i++){
                 if(withRight && (TypeUtil<Type>::cmp(node->v[i], right) > 0
                    ||(TypeUtil<Type>::cmp(node->v[i], right) == 0 && !rightEqu))){
                     return counter;
@@ -278,7 +278,7 @@ public:
         assert(0);
     }
 
-    bool insert( Type key, size_t value){
+    bool insert( Type key, int value){
         printf("haha insert~!");
         BlockItem * xBlk = findNode(key);
         Node * x = (Node *)xBlk->value;
@@ -601,7 +601,7 @@ public:
         printf("%d", (int)findOne("24"));
         printf("\n%d\n", (int)findByRange(true,
                 "13", true, true, "2", false,
-                [](const size_t index, const size_t value){
+                [](const int index, const int value){
                     printf("#%d ", (int)value);
                 }
         ));

@@ -20,9 +20,9 @@ class BlockService{ // using LRUk Algoirthm
 public:
     BlockService(FileService * fileService);
     ~BlockService();
-    size_t allocBlock(int fid);
-    size_t getBlockCnt(int fid);
-    BlockItem * getBlock(int fid, size_t offset);
+    int allocBlock(int fid);
+    int getBlockCnt(int fid);
+    BlockItem * getBlock(int fid, int offset);
 };
 
 #endif //DB_BLOCKSERVICE_H

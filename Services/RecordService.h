@@ -12,17 +12,17 @@ class RecordService {
 public:
     RecordService(BlockService *blockService);
 
-    void *read(int fid, size_t block, size_t offset, size_t len);
+    void *read(int fid, int block, int offset, int len);
 
-    void write(int fid, size_t block, size_t offset, void *data, size_t len);
+    void write(int fid, int block, int offset, void *data, int len);
 
-    size_t insertIntoNewBlock(int fid, void *data, size_t len);
+    int insertIntoNewBlock(int fid, void *data, int len);
 
-    size_t insert(int fid, void *data, size_t len);
+    int insert(int fid, void *data, int len);
 
-    void remove(int fid, size_t block, size_t offset, size_t len);
+    void remove(int fid, int block, int offset, int len);
 
-    void scan(int fid, size_t len, std::function<void(size_t, void *)> consumer);
+    void scan(int fid, int len, std::function<void(int, void *)> consumer);
 };
 
 

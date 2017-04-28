@@ -12,7 +12,7 @@
 
 class IndexModel{
     int fid;
-    size_t on;
+    int on;
     FileService * fileService;
     AbstractIndexRunner * indexRunner;
     std::string name;
@@ -21,7 +21,7 @@ class IndexModel{
     public:
     IndexModel(FileService * fileService, BlockService * blockService,
                       const std::string & fname, const std::string & name,
-                      JSON * config, size_t on, bool create, ColumnType columnType, int columnSize);
+                      JSON * config, int on, bool create, ColumnType columnType, int columnSize);
 
     inline int getFid() const {
         return fid;
@@ -35,7 +35,7 @@ class IndexModel{
         return name;
     }
 
-    inline size_t getOn() const {
+    inline int getOn() const {
         return on;
     }
 

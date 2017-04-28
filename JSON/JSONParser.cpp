@@ -15,15 +15,15 @@ bool isValidAttr( char chr){
         || chr == '_' || chr == '$' || (chr >= '0' && chr <= '9');
 }
 
-JSON * parseObject(const char * str, size_t & pos);
-JSON * parseArray(const char * str, size_t & pos);
-JSON * parseNumber(const char * str, size_t & pos);
-JSON * parseString(const char * str, size_t & pos);
-JSON * parseValue(const char * str, size_t & pos);
-JSON * parseConstant(const char * str, size_t & pos);
+JSON * parseObject(const char * str, int & pos);
+JSON * parseArray(const char * str, int & pos);
+JSON * parseNumber(const char * str, int & pos);
+JSON * parseString(const char * str, int & pos);
+JSON * parseValue(const char * str, int & pos);
+JSON * parseConstant(const char * str, int & pos);
 
 
-JSON * parseNumber(const char * str, size_t & pos){
+JSON * parseNumber(const char * str, int & pos){
     bool doubleFlag = false;
     bool negFlag = false;
     if(str[pos] == '-'){ negFlag = true; pos++; }
@@ -67,7 +67,7 @@ JSON * parseNumber(const char * str, size_t & pos){
 }
 
 
-JSON * parseArray(const char * str, size_t & pos){
+JSON * parseArray(const char * str, int & pos){
     pos ++; // [
     JSONArray * jsonArray = new JSONArray();
     while( isEscapeChar(str[pos]) ) pos ++;
@@ -84,8 +84,8 @@ JSON * parseArray(const char * str, size_t & pos){
     return (JSON *) jsonArray;
 }
 
-size_t parseStringLiteral(const char * str, size_t & pos){
-    size_t now = 0;
+int parseStringLiteral(const char * str, int & pos){
+    int now = 0;
     pos ++; // "
     while( str[pos] != '\"' && str[pos] != 0){
         if( str[pos] == '\\'){
@@ -112,13 +112,13 @@ size_t parseStringLiteral(const char * str, size_t & pos){
     return now + 1;
 }
 
-JSON * parseString( const char * str, size_t & pos){
-    size_t end = parseStringLiteral( str, pos );
+JSON * parseString( const char * str, int & pos){
+    int end = parseStringLiteral( str, pos );
     if( end == 0 ) return nullptr;
     return new JSONString( parseStringBuffer , end - 1);
 }
 
-JSON * parseConstant(const char * str, size_t & pos){
+JSON * parseConstant(const char * str, int & pos){
     if( memcmp(str + pos, "true", 4) == 0 ) {
         pos += 4;
         return new JSONBoolean(true);
@@ -134,7 +134,7 @@ JSON * parseConstant(const char * str, size_t & pos){
     return nullptr;
 }
 
-JSON * parseValue(const char * str, size_t & pos){
+JSON * parseValue(const char * str, int & pos){
     if ( str[pos] == '{') return parseObject(str, pos);
     else if( str[pos] == '[') return parseArray(str, pos);
     else if( str[pos] == '\"') return parseString(str, pos);
@@ -142,12 +142,12 @@ JSON * parseValue(const char * str, size_t & pos){
     else return parseConstant(str, pos);
 }
 
-JSON * parseObject(const char * str, size_t & pos){
+JSON * parseObject(const char * str, int & pos){
     JSONObject * jsonObject = new JSONObject();
     pos ++; // {
     while( isEscapeChar(str[pos]) ) pos ++;
     while( str[pos] != '}' ){
-        size_t keyOffset = parseStringLiteral(str, pos);
+        int keyOffset = parseStringLiteral(str, pos);
         if( keyOffset == 0 ) { delete jsonObject; return nullptr; }
         std::string key( parseStringBuffer , keyOffset - 1 );
     
@@ -171,10 +171,10 @@ JSON * parseObject(const char * str, size_t & pos){
 }
 
 
-JSON * parsePath(const char * path, size_t & pos, JSON * root){
+JSON * parsePath(const char * path, int & pos, JSON * root){
     if(path[pos] == 0 || root == nullptr) return root;
     if(path[pos] == '.'){
-        size_t now = 0;
+        int now = 0;
         pos ++; // .
         while(isValidAttr(path[pos])){
             parseStringBuffer[now ++ ] = path[pos ++];
@@ -187,7 +187,7 @@ JSON * parsePath(const char * path, size_t & pos, JSON * root){
         if(path[pos] == '\"'){
             pos ++; // "
             const char * head = path + pos;
-            size_t result = parseStringLiteral(path, pos);
+            int result = parseStringLiteral(path, pos);
             if( result == 0 || path[pos] != ']' )return nullptr;
             pos ++; // ]
             return parsePath(path, pos, root->get(std::string(head, result)));
@@ -211,12 +211,12 @@ JSON * JSON::path(const std::string &path){
 }
 
 JSON * JSON::path(const char * path){
-    size_t pos = 0;
+    int pos = 0;
     return parsePath( path, pos, this);
 }
 
 JSON * JSON::parse(const char * str){
-    size_t pos = 0;
+    int pos = 0;
     while( isEscapeChar(str[pos]) ) pos ++;
     return parseObject(str, pos);
 }

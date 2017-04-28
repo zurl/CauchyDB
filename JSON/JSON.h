@@ -9,7 +9,7 @@
 #include <sstream>
 #include <iostream>
 
-const size_t JSON_BUFFER_SIZE = 10888897;
+const int JSON_BUFFER_SIZE = 10888897;
 
 class JSONInteger; class JSONDouble;
 class JSONArray; class JSONObject;
@@ -25,10 +25,10 @@ class JSON{
     bool saveIntoFile(const char * fileName, bool format = true);
     JSON * path(const std::string &path);
     JSON * path(const char * path);
-    JSON * get(size_t index);
+    JSON * get(int index);
     JSON * get(const std::string &index);
     JSON * get(const char * index);
-    virtual std::string toString(bool format = false, size_t indent = 0) = 0;
+    virtual std::string toString(bool format = false, int indent = 0) = 0;
     JSONInteger * toInteger();
     JSONString * toJString();
     JSONDouble * toDouble();
@@ -43,8 +43,8 @@ class JSONString : public JSON{
     std::string str;
     JSONString( const std::string & str );
     JSONString( const char * str );
-    JSONString( const char * str , size_t n );
-    virtual std::string toString(bool format = false, size_t indent = 0) override ;
+    JSONString( const char * str , int n );
+    virtual std::string toString(bool format = false, int indent = 0) override ;
     virtual Type type() override ;
 };
 
@@ -52,7 +52,7 @@ class JSONInteger : public JSON{
     public:
     long long value;
     JSONInteger( long long value );
-    virtual std::string toString(bool format = false, size_t indent = 0) override ;
+    virtual std::string toString(bool format = false, int indent = 0) override ;
     virtual Type type() override ;
 };
 
@@ -60,7 +60,7 @@ class JSONDouble : public JSON {
     public:
     double value;
     JSONDouble( double value) ;
-    virtual std::string toString(bool format = false, size_t indent = 0) override;
+    virtual std::string toString(bool format = false, int indent = 0) override;
     virtual Type type() override;
 };
 
@@ -70,7 +70,7 @@ class JSONBoolean : public JSON{
     public:
     bool value;
     JSONBoolean(bool value);
-    virtual std::string toString(bool format = false, size_t indent = 0) override;
+    virtual std::string toString(bool format = false, int indent = 0) override;
     virtual Type type() override ;
 };
 
@@ -78,7 +78,7 @@ class JSONArray : public JSON{
     std::vector<JSON *> elements;
 public:
     ~JSONArray() ;
-    virtual std::string toString(bool format = false, size_t indent = 0) override ;
+    virtual std::string toString(bool format = false, int indent = 0) override ;
     virtual Type type() override ;
     inline const std::vector<JSON *> &getElements() const {
         return elements;
@@ -89,7 +89,7 @@ public:
 };
 
 class JSONNull : public JSON {
-    virtual std::string toString(bool format = false, size_t indent = 0) override ;
+    virtual std::string toString(bool format = false, int indent = 0) override ;
     virtual Type type() override ;
 };
 class JSONObject : public JSON{
@@ -97,7 +97,7 @@ class JSONObject : public JSON{
 public:
     JSONObject();
     ~JSONObject();
-    virtual std::string toString(bool format = false, size_t indent = 0) override;
+    virtual std::string toString(bool format = false, int indent = 0) override;
     virtual Type type() override;
     inline void set(const std::string & key, const std::string & value){
         this->hashMap.emplace(key, new JSONString(value));
@@ -113,9 +113,6 @@ public:
     }
     inline void set(const std::string & key, int value){
         this->hashMap.emplace(key, new JSONInteger(value));
-    }
-    inline void set(const std::string & key, size_t value){
-        this->hashMap.emplace(key, new JSONInteger((long long)value));
     }
     inline void set(const std::string & key, double value){
         this->hashMap.emplace(key, new JSONDouble(value));

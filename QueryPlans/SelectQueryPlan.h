@@ -13,7 +13,7 @@
 class SelectQueryPlan : public QueryPlan{
     QueryScanner * queryScanner;
     TableModel * tableModel;
-    std::vector<size_t> columns;
+    std::vector<int> columns;
     SQLWhereClause * where;
 public:
     SelectQueryPlan(TableModel * tableModel,

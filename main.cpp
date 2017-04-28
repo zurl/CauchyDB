@@ -113,7 +113,7 @@ public:
     void testFile(){
         int fid = fileService->openFile("aes.jb");
         printf("open file: fid = %d\n", fid);
-        size_t offset = fileService->allocBlock(fid);
+        int offset = fileService->allocBlock(fid);
         printf("alloc block at offset = %d\n", (int) offset);
         char * data = new char[BLOCK_SIZE];
         data[0] = 'a';
@@ -127,7 +127,7 @@ public:
         delete[] data;
     }
     void testBlockSr(int fid){
-        size_t offset = blockService->allocBlock(fid);
+        int offset = blockService->allocBlock(fid);
         BlockItem * blk = blockService->getBlock(fid, offset);
         char * data = (char * )blk->value;
         data[0] = 'a';
@@ -147,7 +147,7 @@ public:
 
     void testQueryScanner(int fid){
         char buffer[BLOCK_SIZE];
-        size_t len = 8;
+        int len = 8;
         buffer[0] = 'a';
         buffer[1] = 'v';
         buffer[2] = 0;
@@ -163,7 +163,7 @@ public:
         printf("read from record 2 %s\n", recordService->read(fid, __fo(c),__bo(c), 8));
         printf("read from record 3 %s\n", recordService->read(fid, __fo(d),__bo(d), 8));
         LinearQueryScanner * linearQueryScanner = new LinearQueryScanner(recordService, fid,len);
-        linearQueryScanner->scan([](size_t id, void * ptr){
+        linearQueryScanner->scan([](int id, void * ptr){
             printf("scan %lld => %s\n", (long long)id, ptr);
         });
     }

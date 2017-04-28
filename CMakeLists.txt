@@ -48,12 +48,10 @@ set(SOURCE_FILES
         QueryPlans/SelectQueryPlan.h
         QueryPlans/SQLWhereClause.cpp
         QueryPlans/SQLWhereClause.h
-        QueryPlans/SQLCondition.cpp
-        QueryPlans/SQLCondition.h
         QueryPlans/CreateQueryPlan.h
         QueryPlans/CreateTableQueryPlan.cpp
         QueryPlans/CreateTableQueryPlan.h
         QueryPlans/CreateDataBaseQueryPlan.cpp
-        QueryPlans/CreateDataBaseQueryPlan.h QueryPlans/InterpreterQueryPlan.cpp QueryPlans/InterpreterQueryPlan.h QueryPlans/AbstractSQLCondition.h QueryPlans/BasicSQLCondition.h QueryPlans/GreaterSQLCondition.h)
+        QueryPlans/CreateDataBaseQueryPlan.h QueryPlans/InterpreterQueryPlan.cpp QueryPlans/InterpreterQueryPlan.h QueryPlans/SQLCondition/AbstractSQLCondition.h QueryPlans/SQLCondition/BasicSQLCondition.h QueryPlans/SQLCondition/GreaterSQLCondition.h QueryPlans/SQLCondition/SQLConditionUtils.h QueryPlans/SQLCondition/SQLConditionFactory.h)
 
 add_executable(db ${SOURCE_FILES})

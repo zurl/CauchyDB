@@ -4,14 +4,14 @@
 
 #include "RangeIndexQueryScanner.h"
 
-RangeIndexQueryScanner::RangeIndexQueryScanner(AbstractIndexRunner * indexRunner, RecordService * recordService, size_t len, int tfid,
+RangeIndexQueryScanner::RangeIndexQueryScanner(AbstractIndexRunner * indexRunner, RecordService * recordService, int len, int tfid,
 void * left, void * right, bool leq, bool req, bool withLeft, bool withRight, std::string on) : QueryScanner(
         len,recordService),indexRunner(indexRunner),  tfid(tfid), left(left), right(right), leq(leq), req(req),
 withLeft(withLeft), withRight(withRight), on(on) {}
 
-void RangeIndexQueryScanner::scan(std::function<void(size_t, void *)> consumer)  {
+void RangeIndexQueryScanner::scan(std::function<void(int, void *)> consumer)  {
     indexRunner->findByRange(withLeft, left, leq, withRight, right, req,
-                             [consumer, this](size_t id, size_t blk){
+                             [consumer, this](int id, int blk){
                                  recordService->read(tfid, blk / BLOCK_SIZE, blk % BLOCK_SIZE, len);
                              });
 }

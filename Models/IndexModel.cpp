@@ -12,7 +12,7 @@ JSON * IndexModel::toJSON(const std::string & on) {
 }
 
 IndexModel::IndexModel(FileService * fileService, BlockService * blockService, const std::string & fname, const std::string & name,
-        JSON * config, size_t on, bool create, ColumnType columnType, int columnSize):name(name){
+        JSON * config, int on, bool create, ColumnType columnType, int columnSize):name(name){
         this->columnType = columnType;
         this->fileService = fileService;
         if(create){

@@ -1,8 +1,8 @@
 #include "JSON.h"
 
-std::string getIndent(size_t indent){
+std::string getIndent(int indent){
     std::string result = "";
-    for(size_t i = 0; i < indent; i ++ )
+    for(int i = 0; i < indent; i ++ )
         result += "  ";
     return result;
 }
@@ -10,14 +10,14 @@ std::string getIndent(size_t indent){
 JSONString::JSONString( const std::string & str ) : str(str){}
 JSONString::JSONString( const char * str ) : str(str){}
 
-JSONString::JSONString( const char * str , size_t n ): str(str, n){}
-std::string JSONString::toString(bool format, size_t indent)  {
+JSONString::JSONString( const char * str , int n ): str(str, n){}
+std::string JSONString::toString(bool format, int indent)  {
     return "\"" + str + "\"";
 }
 JSON::Type JSONString::type() { return JSON::Type::String; }
 
 JSONInteger::JSONInteger( long long value ): value(value){}
-std::string JSONInteger::toString(bool format, size_t indent) {
+std::string JSONInteger::toString(bool format, int indent) {
     std::ostringstream os;
     os << value;
     return os.str();
@@ -25,7 +25,7 @@ std::string JSONInteger::toString(bool format, size_t indent) {
 JSON::Type JSONInteger::type() { return JSON::Type::Integer; }
 
 JSONDouble::JSONDouble( double value) : value( value ){}
-std::string JSONDouble::toString(bool format, size_t indent) {
+std::string JSONDouble::toString(bool format, int indent) {
     std::ostringstream os;
     os << value;
     return os.str();
@@ -38,11 +38,11 @@ JSONObject::~JSONObject(){
         delete pair.second;
     }
 }
-std::string JSONObject::toString(bool format, size_t indent) {
+std::string JSONObject::toString(bool format, int indent) {
     std::ostringstream os;
     os << "{"; 
     if( format && hashMap.size() != 0) os << std::endl;
-    size_t index = hashMap.size();
+    int index = hashMap.size();
     for( auto & pair : hashMap){
         index --;
         if( format ) os << getIndent(indent + 1);
@@ -64,7 +64,7 @@ const std::unordered_map<std::string, JSON *> &JSONObject::getHashMap() const {
 }
 
 JSONBoolean::JSONBoolean(bool value) : value( value ){}
-std::string JSONBoolean::toString(bool format, size_t indent) {
+std::string JSONBoolean::toString(bool format, int indent) {
     if( value ) return "true";
     else return "false";
 }
@@ -75,11 +75,11 @@ JSONArray::~JSONArray(){
         delete item;
     }
 }
-std::string JSONArray::toString(bool format, size_t indent) {
+std::string JSONArray::toString(bool format, int indent) {
     std::ostringstream os;
     os << "["; 
     if( format && elements.size() != 0) os << std::endl;
-    size_t index = elements.size();
+    int index = elements.size();
     for( auto & item : elements){
         index --;
         if( format ) os << getIndent(indent + 1);
@@ -93,12 +93,12 @@ std::string JSONArray::toString(bool format, size_t indent) {
 }
 JSON::Type JSONArray::type() { return JSON::Type::Array; }
 
-std::string JSONNull::toString(bool format, size_t indent) {
+std::string JSONNull::toString(bool format, int indent) {
     return "null";
 }
 JSON::Type JSONNull::type() { return JSON::Type::Null; }
 
-JSON * JSON::get(size_t index){
+JSON * JSON::get(int index){
     if( this->type() != JSON::Type::Array) return nullptr;
     JSONArray * jsonArray = (JSONArray *)this;
     if(index >= jsonArray->getElements().size()) return nullptr;
@@ -145,7 +145,7 @@ char jsonBuffer [ JSON_BUFFER_SIZE ];
 JSON * JSON::fromFile(const char * fileName){
     FILE * file = fopen(fileName, "r");
     if( !file )return nullptr;
-    size_t now = 0;
+    int now = 0;
     int c = 0;
     c = fgetc(file);
     while(c != EOF){jsonBuffer[now++] = (char)c; c= fgetc(file);}

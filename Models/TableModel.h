@@ -15,9 +15,9 @@ class TableModel{
     FileService * fileService;
     std::string name;
     std::vector<ColumnModel> columns;
-    size_t len;
+    int len;
     std::map<int, IndexModel> indices;
-    std::map<int, size_t> lenTable;
+    std::map<int, int> lenTable;
     std::map<std::string, int> keyindex;
     BlockService * blockService;
 public:
@@ -39,14 +39,14 @@ public:
 
     int getColumnIndex(const std::string & str) const ;
 
-    inline size_t getLen() const {
+    inline int getLen() const {
         return len;
     }
 
     inline const std::vector<ColumnModel> &getColumns() {
         return columns;
     }
-    inline size_t getColumnLen(int cid){
+    inline int getColumnLen(int cid){
         return lenTable[cid];
     }
 

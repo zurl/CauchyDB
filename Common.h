@@ -19,7 +19,7 @@ const int BLOCK_SIZE = 1024;
 
 struct BlockItem{
     int fid;
-    size_t offset;
+    int offset;
     char flag;
     bool modified;
     void * value;
@@ -131,7 +131,6 @@ enum class ColumnType{
 
 class ColumnTypeUtil{
 public:
-    static bool equal(ColumnType type, )
     static std::string toString(ColumnType type){
         if( type == ColumnType::Char ){
             return "char";

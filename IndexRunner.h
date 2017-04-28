@@ -47,18 +47,18 @@ class IndexRunner: public AbstractIndexRunner{
 public:
     IndexRunner(int fid, BlockService *blockService) : bPlusTree(blockService, fid){}
 
-    int insert(void * key, size_t value) override {
+    int insert(void * key, int value) override {
         return bPlusTree.insert(IndexRunnerWrapper<T>::convert(key), value);
     }
 
-    size_t findOne(void * key) override {
+    int findOne(void * key) override {
         return bPlusTree.findOne(IndexRunnerWrapper<T>::convert(key));
     }
 
-    size_t findByRange(
+    int findByRange(
             bool withLeft, void * left, bool leftEqu,
             bool withRight, void * right, bool rightEqu,
-            std::function<void(size_t, size_t)> consumer
+            std::function<void(int, int)> consumer
     ) override {
         return bPlusTree.findByRange(
                 withLeft, IndexRunnerWrapper<T>::convert(left), leftEqu,

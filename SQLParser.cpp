@@ -3,11 +3,12 @@
 //
 
 #include "SQLParser.h"
+#include "QueryPlans/SQLCondition/SQLConditionFactory.h"
 
 InsertQueryPlan *SQLParser::parseInsertStatement() {
     //auto insertQueryPlan = new InsertQueryPlan();
     Token token = tokens[pos];
-    std::vector<size_t> columns;
+    std::vector<int> columns;
     if(!tokencmp(token, "into")) throw SQLSyntaxException(0, "syntax error");
     pos++;token = tokens[pos]; //into
     TableModel * table = sqlSession->getTable(std::string(str, token.begin, token.end - token.begin + 1));
@@ -40,7 +41,7 @@ InsertQueryPlan *SQLParser::parseInsertStatement() {
         }
         else if(token.type == TokenType::string){
             if( columnModel->getType() != ColumnType::Char ) throw SQLTypeException(3, "type error");
-            size_t len = columnModel->getSize();
+            int len = columnModel->getSize();
             int real_len = std::min(token.end - token.begin + 1, (int)(len - 1));
             memcpy(data, str + token.begin, real_len);
             data[real_len] = 0;
@@ -261,58 +262,71 @@ bool SQLParser::tokencmp(SQLParser::Token &token, const char *target) {
     int len1 = token.end - token.begin + 1;
     int len2 = (int)strlen(target);
     if( len1 != len2 ) return false;
-    return strncasecmp(str + token.begin, target, (size_t)len1) == 0;
+    return strncasecmp(str + token.begin, target, (int)len1) == 0;
 }
 
-std::list<SQLCondition> *SQLParser::parseWhereClause(TableModel *tableModel) {
+std::list<AbstractSQLCondition *> *SQLParser::parseWhereClause(TableModel *tableModel) {
     Token token = tokens[pos];
-    auto conditionList = new std::list<SQLCondition>;
+    auto conditionList = new std::list<AbstractSQLCondition *>;
     try {
         while (token.type == TokenType::name) {
             int cid = tableModel->getColumnIndex(std::string(str, token.begin, token.end - token.begin + 1));
-            SQLCondition::Type type;
+            AbstractSQLCondition::Type type;
             pos ++; token = tokens[pos]; // col
-            if(tokencmp(token, "<")){
-                type = SQLCondition::Type::lt;
-            }
-            else if(tokencmp(token, ">")){
-                type = SQLCondition::Type::gt;
-            }
-            else if(tokencmp(token, ">=")){
-                type = SQLCondition::Type::gte;
-            }
-            else if(tokencmp(token, "<=")){
-                type = SQLCondition::Type::lte;
-            }
-            else if(tokencmp(token, "<>")){
-                type = SQLCondition::Type::neq;
-            }
-            else if(tokencmp(token, "=")){
-                type = SQLCondition::Type::eq;
-            }
-            else throw new SQLSyntaxException(0, "illegal opes");
+            Token ope = token;
             pos ++; token = tokens[pos]; // op
             void * data;
             ColumnModel * columnModel = tableModel->getColumn(cid);
+            AbstractSQLConditionFactory * sqlConditionFactory;
             if(token.type == TokenType::integer){
                 if( columnModel->getType() != ColumnType::Int ) throw SQLTypeException(3, "type error");
                 data = new int[1];
                 sscanf(str + token.begin, "%d", (int *)data);
+                sqlConditionFactory = IntegerSQLConditionFactory;
             }
             else if(token.type == TokenType::string){
                 if( columnModel->getType() != ColumnType::Char ) throw SQLTypeException(3, "type error");
-                size_t len = columnModel->getSize();
+                int len = columnModel->getSize();
                 data = new char[len + 1];
                 memcpy(data, str + token.begin, token.end - token.begin + 1);
                 ((char *)data)[token.end - token.begin + 1] = 0;
+                sqlConditionFactory = CharSQLConditionFactory;
             }
             else if(token.type == TokenType::real){
                 if( columnModel->getType() != ColumnType::Float ) throw SQLTypeException(3, "type error");
                 data = new double[1];
                 sscanf(str + token.begin, "%lf", (double *)data);
+                sqlConditionFactory = DoubleSQLConditionFactory;
             }
             else throw new SQLSyntaxException(0, "illegal operand");
-            conditionList->emplace_back(tableModel, type, cid, data);
+
+            if(tokencmp(ope, "<")){
+                type = AbstractSQLCondition::Type::lt;
+            }
+            else if(tokencmp(ope, ">")){
+                type = AbstractSQLCondition::Type::gt;
+            }
+            else if(tokencmp(ope, ">=")){
+                type = AbstractSQLCondition::Type::gte;
+            }
+            else if(tokencmp(ope, "<=")){
+                type = AbstractSQLCondition::Type::lte;
+            }
+            else if(tokencmp(ope, "<>")){
+                type = AbstractSQLCondition::Type::neq;
+            }
+            else if(tokencmp(ope, "=")){
+                type = AbstractSQLCondition::Type::eq;
+            }
+            else throw new SQLSyntaxException(0, "illegal opes");
+
+            conditionList->emplace_back(sqlConditionFactory->createSQLCondition(
+                  type,
+                  columnModel->getSize(),
+                  cid,
+                  columnModel->getOn(),
+                  data
+            ));
             pos ++; token = tokens[pos]; // imm
             if(!tokencmp(token, "and")) break;
             pos ++; token = tokens[pos]; // and
@@ -324,37 +338,37 @@ std::list<SQLCondition> *SQLParser::parseWhereClause(TableModel *tableModel) {
     }
 }
 
-std::pair<QueryScanner *, SQLWhereClause *> SQLParser::getQueryScanner(TableModel *table, std::list<SQLCondition> *list) {
+std::pair<QueryScanner *, SQLWhereClause *> SQLParser::getQueryScanner(TableModel *table, std::list<AbstractSQLCondition *> *list) {
     int status = 0;
-    SQLCondition *l = nullptr, *r = nullptr;
+    AbstractSQLCondition *l = nullptr, *r = nullptr;
     IndexModel *sidx;
     // 0 => no 1 => findone  2=> left 3=>right 4=>findtwo
     SQLWhereClause * where = new SQLWhereClause();
     QueryScanner * scanner = nullptr;
     for(auto & item : *list){
         if(status == 1 || status == 4){
-            where->addCondition(new SQLCondition(item.type, item.cid, item.value));
+            where->addCondition(item);
             continue;
         }
-        IndexModel * idx = table->findIndexOn(item.cid);
+        IndexModel * idx = table->findIndexOn(item->getCid());
         if(status == 0){
             if(idx != nullptr){
-                if(item.type == SQLCondition::Type::gt
-                   ||item.type == SQLCondition::Type::gte){
-                    l = &item;
+                if(item->getType() == AbstractSQLCondition::Type::gt
+                   ||item->getType() == AbstractSQLCondition::Type::gte){
+                    l = item;
                     status = 2;
                     sidx = idx;
                     continue;
                 }
-                if(item.type == SQLCondition::Type::lt
-                   ||item.type == SQLCondition::Type::lte){
-                    r = &item;
+                if(item->getType() == AbstractSQLCondition::Type::lt
+                   ||item->getType() == AbstractSQLCondition::Type::lte){
+                    r = item;
                     status = 3;
                     sidx = idx;
                     continue;
                 }
-                if(item.type == SQLCondition::Type::eq){
-                    l = &item;
+                if(item->getType() == AbstractSQLCondition::Type::eq){
+                    l = item;
                     status = 1;
                     sidx = idx;
                     continue;
@@ -363,21 +377,21 @@ std::pair<QueryScanner *, SQLWhereClause *> SQLParser::getQueryScanner(TableMode
         }
         else if(status == 2
                 && idx == sidx
-                && (item.type == SQLCondition::Type::lt
-                    ||item.type == SQLCondition::Type::lte)){
-            r = &item;
+                && (item->getType() == AbstractSQLCondition::Type::lt
+                    ||item->getType() == AbstractSQLCondition::Type::lte)){
+            r = item;
             status = 4;
             continue;
         }
         else  if(status == 3
                  && idx == sidx
-                 && (item.type == SQLCondition::Type::gt
-                     ||item.type == SQLCondition::Type::gte)) {
-            l = &item;
+                 && (item->getType() == AbstractSQLCondition::Type::gt
+                     ||item->getType() == AbstractSQLCondition::Type::gte)) {
+            l = item;
             status = 4;
             continue;
         }
-        where->addCondition(new SQLCondition(item.type, item.cid, item.value));
+        where->addCondition(item);
 
     }
     if(status == 1){
@@ -386,8 +400,8 @@ std::pair<QueryScanner *, SQLWhereClause *> SQLParser::getQueryScanner(TableMode
                 sqlSession->getRecordService(),
                 table->getLen(),
                 table->getFid(),
-                l->value,
-                table->getColumn(l->cid)->getName()
+                l->getValue(),
+                table->getColumn(l->getCid())->getName()
         );
     }
     else if(status == 2 ||status == 3 || status == 4){
@@ -396,13 +410,13 @@ std::pair<QueryScanner *, SQLWhereClause *> SQLParser::getQueryScanner(TableMode
                 sqlSession->getRecordService(),
                 table->getLen(),
                 table->getFid(),
-                l == nullptr ? l : l->value,
-                r == nullptr ? r : r->value,
-                l == nullptr ? true : l->type == SQLCondition::Type::gte,
-                r == nullptr ? true : r->type == SQLCondition::Type::lte,
+                l == nullptr ? l : l->getValue(),
+                r == nullptr ? r : r->getValue(),
+                l == nullptr ? true : l->getType() == AbstractSQLCondition::Type::gte,
+                r == nullptr ? true : r->getType() == AbstractSQLCondition::Type::lte,
                 l != nullptr,
                 r != nullptr,
-                table->getColumn(l->cid)->getName()
+                table->getColumn(l->getCid())->getName()
         );
     }
     // === select index ===

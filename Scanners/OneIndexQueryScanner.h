@@ -13,9 +13,9 @@ class OneIndexQueryScanner : public QueryScanner{
     int tfid;
     void * value;
 public:
-    OneIndexQueryScanner(AbstractIndexRunner * indexRunner,RecordService * recordService, size_t len, int tfid,
+    OneIndexQueryScanner(AbstractIndexRunner * indexRunner,RecordService * recordService, int len, int tfid,
                          void * value, std::string on) ;
-    void scan(std::function<void(size_t, void *)> consumer) override ;
+    void scan(std::function<void(int, void *)> consumer) override ;
     JSON *toJSON() override ;
 };
 

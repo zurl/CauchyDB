@@ -6,10 +6,10 @@
 
 
 
-LinearQueryScanner::LinearQueryScanner(RecordService *recordService,int fid,size_t len) : QueryScanner(len, recordService),
+LinearQueryScanner::LinearQueryScanner(RecordService *recordService,int fid,int len) : QueryScanner(len, recordService),
                                                                              fid(fid) {}
 
-void LinearQueryScanner::scan(std::function<void(size_t, void *)> consumer)  {
+void LinearQueryScanner::scan(std::function<void(int, void *)> consumer)  {
     return recordService->scan(fid, len, consumer);
 }
 

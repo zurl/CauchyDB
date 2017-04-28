@@ -16,10 +16,10 @@ TableModel::TableModel(FileService * fileService, BlockService * blockService, s
     fid = fileService->openFile(name.c_str());
     assert(fid != -1);
     JSONArray * data = config->get("columns")->toArray();
-    size_t on = 0;
+    int on = 0;
     for(auto & column: data->getElements()){
         columns.emplace_back(column, on);
-        on += (size_t)column->get("size")->toInteger()->value;
+        on += (int)column->get("size")->toInteger()->value;
     }
     // build fast search keyindex
     for(int i = 0; i < columns.size(); i++){

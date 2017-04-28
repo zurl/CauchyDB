@@ -10,10 +10,10 @@
 class ColumnModel{
 
 public:
-    inline ColumnModel( JSON * config, size_t on ){
+    inline ColumnModel( JSON * config, int on ){
         JSONObject * data = config->toObject();
         name = data->get("name")->toJString()->str.c_str();
-        size = (size_t)data->get("size")->toInteger()->value;
+        size = (int)data->get("size")->toInteger()->value;
         this->on = on;
         const char * typestr = data->get("type")->toJString()->str.c_str();
         if( strcmp(typestr, "int") == 0){
@@ -28,7 +28,7 @@ public:
         else throw "fuck type";
     }
 
-    inline size_t getSize() const {
+    inline int getSize() const {
         return size;
     }
 
@@ -40,16 +40,16 @@ public:
         return name;
     }
 
-    inline size_t getOn() const {
+    inline int getOn() const {
         return on;
     }
 
     JSON * toJSON();
 private:
     std::string name;
-    size_t size;
+    int size;
     ColumnType type;
-    size_t on;
+    int on;
 };
 
 #endif //DB_COLUMNMODEL_H

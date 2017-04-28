@@ -57,13 +57,13 @@ BlockService::~BlockService(){
         blockCnt --;
     }
 }
-size_t BlockService::allocBlock(int fid) {
+int BlockService::allocBlock(int fid) {
     return fileService->allocBlock(fid);
 }
-size_t BlockService::getBlockCnt(int fid){
+int BlockService::getBlockCnt(int fid){
     return fileService->getBlockCnt(fid);
 }
-BlockItem * BlockService::getBlock(int fid, size_t offset){
+BlockItem * BlockService::getBlock(int fid, int offset){
     //printf("get %d %d\n", fid, offset);
     auto iter = cacheQueue.begin();
     while( iter != cacheQueue.end()){

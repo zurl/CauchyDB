@@ -4,12 +4,12 @@
 #include "OneIndexQueryScanner.h"
 
 
-OneIndexQueryScanner::OneIndexQueryScanner(AbstractIndexRunner * indexRunner,RecordService * recordService, size_t len, int tfid,
+OneIndexQueryScanner::OneIndexQueryScanner(AbstractIndexRunner * indexRunner,RecordService * recordService, int len, int tfid,
                      void * value, std::string on) : QueryScanner(len,recordService),indexRunner(indexRunner), tfid(tfid),
                                                      value(value), on(on) {}
 
-void OneIndexQueryScanner::scan(std::function<void(size_t, void *)> consumer)  {
-    size_t ptr = indexRunner->findOne(value);
+void OneIndexQueryScanner::scan(std::function<void(int, void *)> consumer)  {
+    int ptr = indexRunner->findOne(value);
     if(ptr != 0) consumer(0, recordService->read(tfid, ptr / BLOCK_SIZE, ptr % BLOCK_SIZE, len));
 }
 

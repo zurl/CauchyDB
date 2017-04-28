@@ -4,5 +4,5 @@
 
 #include "QueryScanner.h"
 
-QueryScanner::QueryScanner(size_t len, RecordService *recordService) : len(len), recordService(recordService) {
+QueryScanner::QueryScanner(int len, RecordService *recordService) : len(len), recordService(recordService) {
 }

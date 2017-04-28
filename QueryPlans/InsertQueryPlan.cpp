@@ -15,10 +15,10 @@ void *InsertQueryPlan::getData() const {
 
 JSON * InsertQueryPlan::runQuery( RecordService * recordService)  {
     // insert records
-    size_t recordId = recordService->insert(tableModel->getFid(), data, tableModel->getLen());
+    int recordId = recordService->insert(tableModel->getFid(), data, tableModel->getLen());
     auto iter = tableModel->getIndices()->begin();
     while( iter != tableModel->getIndices()->end()){
-        size_t on = iter->second.getOn();
+        int on = iter->second.getOn();
         iter->second.getIndexRunner()->insert((char *)data + on, recordId);
         iter ++;
     }

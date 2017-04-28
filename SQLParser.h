@@ -6,7 +6,6 @@
 #define DB_SQLPARSER_H
 #include "Common.h"
 #include "SQLSession.h"
-#include "QueryPlans/SQLCondition.h"
 #include "QueryPlans/SelectQueryPlan.h"
 #include "QueryPlans/InsertQueryPlan.h"
 #include "QueryPlans/CreateQueryPlan.h"
@@ -16,15 +15,25 @@
 #include "Scanners/LinearQueryScanner.h"
 #include "Scanners/OneIndexQueryScanner.h"
 #include "Scanners/RangeIndexQueryScanner.h"
+#include "QueryPlans/SQLCondition/SQLConditionFactory.h"
 
 class SQLParser{
     SQLSession * sqlSession;
     const char * str = nullptr;// = "create table test2( id int, value char(20), primary key(id) );";
     //const char * str = "insert into test (id, value) values (20, '20');";
     //const char * str = "select id, value from test where value = '20' and value = 'F';";
+
+    AbstractSQLConditionFactory * IntegerSQLConditionFactory = new SQLConditionFactory<int>();
+    AbstractSQLConditionFactory * DoubleSQLConditionFactory = new SQLConditionFactory<double>();
+    AbstractSQLConditionFactory * CharSQLConditionFactory = new SQLConditionFactory<char>();
+
 public:
     SQLParser(SQLSession *sqlSession) : sqlSession(sqlSession) {}
-
+    ~SQLParser(){
+        delete IntegerSQLConditionFactory;
+        delete DoubleSQLConditionFactory;
+        delete CharSQLConditionFactory;
+    }
 
     enum class TokenType {
         integer, real, name, string, ope, null, __keyword
@@ -36,7 +45,7 @@ public:
                 :begin(begin_),end(end_),type(type_){}
     };
     std::vector<Token> tokens;
-    size_t pos = 0;
+    int pos = 0;
 
     inline bool isNum(char x) {
         return x >= '0' && x <= '9';
@@ -49,10 +58,10 @@ public:
 
     bool tokencmp(Token & token, const char * target);
 
-    std::list<SQLCondition> * parseWhereClause(TableModel * tableModel);
+    std::list<AbstractSQLCondition *> * parseWhereClause(TableModel * tableModel);
 
     std::pair<QueryScanner *, SQLWhereClause *>
-    getQueryScanner(TableModel * table, std::list<SQLCondition> * list);
+    getQueryScanner(TableModel * table, std::list<AbstractSQLCondition *> * list);
 
 
     SelectQueryPlan * parseSelectStatement();

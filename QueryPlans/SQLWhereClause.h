@@ -5,13 +5,13 @@
 #ifndef DB_SQLWHERECLAUSE_H
 #define DB_SQLWHERECLAUSE_H
 
-#include "SQLCondition.h"
+#include "SQLCondition/AbstractSQLCondition.h"
 
 
 class SQLWhereClause{
-    std::vector<SQLCondition *> conds;
+    std::vector<AbstractSQLCondition *> conds;
 public:
-    void addCondition(SQLCondition * cond);
+    void addCondition(AbstractSQLCondition * cond);
     JSON * toJSON(TableModel * tableModel);
     bool filter(void * data);
 };

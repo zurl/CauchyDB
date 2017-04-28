@@ -9,7 +9,7 @@
 
 class FileService{
     std::vector<FILE *> files;
-    std::vector<size_t> fileBlockCnt;
+    std::vector<int> fileBlockCnt;
 public:
     FileService();
     FileService(const FileService & ) = delete;
@@ -17,10 +17,10 @@ public:
     void createFile(const char * fileName);
     int openFile(const char * fileName);
     FILE * getFile(int fileID);
-    size_t allocBlock(int fileID);
-    void writeBlock(int fileID, size_t startOffset, void * data);
-    size_t getBlockCnt(int fileID);
-    void * readBlock(int fileID, size_t startOffset);
+    int allocBlock(int fileID);
+    void writeBlock(int fileID, int startOffset, void * data);
+    int getBlockCnt(int fileID);
+    void * readBlock(int fileID, int startOffset);
     ~FileService();
 };
 
