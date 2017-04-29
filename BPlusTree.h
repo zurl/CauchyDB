@@ -59,7 +59,9 @@ public:
     BlockItem * createNode(){
         int offset = blockService->allocBlock(fid);
         BlockItem * blockItem = blockService->getBlock(fid, offset);
+#ifdef CAUCHY_DEBUG
         printf("create node at fid=%d, offset=%d\n", blockItem->fid, (int)blockItem->offset);
+#endif
         return blockItem;
     }
 
@@ -190,7 +192,6 @@ public:
     }
 
     BlockItem * findNode( Type v){
-        now = -1;
         stack.clear();
         stackPos.clear();
         BlockItem * xBlk = root;
@@ -199,8 +200,6 @@ public:
         // search the target node for insertion by linear
         // recursive search
         while(!x->isLeaf){
-            assert(now <= 30000);
-            ++now;
             stack.push_back(xBlk);
             if( TypeUtil<Type>::cmp(x->v[x->size - 1], v) <= 0 ){ // v <=
                 //if( v >= x->v[x->size - 1]){
@@ -279,7 +278,6 @@ public:
     }
 
     bool insert( Type key, int value){
-        printf("haha insert~!");
         BlockItem * xBlk = findNode(key);
         Node * x = (Node *)xBlk->value;
         if( x->size < NODE_SIZE){

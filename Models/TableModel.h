@@ -25,6 +25,9 @@ public:
 
     IndexModel * findIndexOn(int cid)  ;
 
+    inline int getColumnCnt(){
+        return (int)columns.size();
+    }
     inline ColumnModel * getColumn(int cid) {
         return &(columns.operator[](cid));
     }

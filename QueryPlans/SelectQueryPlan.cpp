@@ -10,15 +10,23 @@ SelectQueryPlan::SelectQueryPlan(TableModel * tableModel,
                 const std::vector<std::string> &columns,
                 SQLWhereClause *where)
         :queryScanner(queryScanner), tableModel(tableModel),  where(where) {
-    for(auto & key : columns){
-        this->columns.emplace_back(tableModel->getColumnIndex(key));
+    if(columns.size() == 0){
+        //select * from table
+        for(int i = 0; i < tableModel->getColumnCnt(); i ++){
+            this->columns.emplace_back(i);
+        }
+    }
+    else{
+        for(auto & key : columns){
+            this->columns.emplace_back(tableModel->getColumnIndex(key));
+        }
     }
 }
 
 JSON *SelectQueryPlan::runQuery(RecordService *recordService)  {
     auto result = new JSONArray();
     queryScanner->scan([this, result](int id, void *data){
-        if(!where->filter(data)) return;
+        if(where != nullptr && !where->filter(data)) return;
         auto current = new JSONArray();
         for(auto & cid : columns){
             auto col = tableModel->getColumn(cid);

@@ -38,3 +38,8 @@ JSON *DataBaseModel::toJSON() {
     json->set("tables", jobj);
     return json;
 }
+
+bool DataBaseModel::hasTable(const std::string &str) {
+    auto iter = tables.find(str);
+    return iter != tables.end();
+}

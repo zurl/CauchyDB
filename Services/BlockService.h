@@ -10,7 +10,7 @@
 
 
 class BlockService{ // using LRUk Algoirthm
-    const int MAX_BLOCK_CACHE = 128; //64 * 4kb = 256kb
+    const int MAX_BLOCK_CACHE = 4096; //64 * 4kb = 256kb
     const int LRU_K_VALUE = 2;
     FileService * fileService;
     std::list<BlockItem *> accessQueue;

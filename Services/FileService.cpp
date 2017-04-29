@@ -32,6 +32,9 @@ int FileService::allocBlock(int fileID){
     return offset / BLOCK_SIZE;
 }
 void FileService::writeBlock(int fileID, int startOffset, void * data){
+#ifdef CAUCHY_DEBUG
+    printf("write block at fid=%d offset=%d\n", fileID, startOffset);
+#endif
     assert(fileID < files.size() && fileID >= 0);
     FILE * fp = files[fileID];
     fseek(fp, startOffset * BLOCK_SIZE, SEEK_SET);

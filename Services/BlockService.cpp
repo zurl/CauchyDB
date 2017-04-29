@@ -10,7 +10,9 @@ void BlockService::cleanup(){
     while( iter != accessQueue.end()){
         auto item = *iter;
         if( item->modified ){
+#ifdef CAUCHY_DEBUG
             printf("write back at fid = %d, blk = %d\n", item->fid, (int) item->offset);
+#endif
             fileService->writeBlock(item->fid, item->offset, item->value);
         }
         delete item;
@@ -22,7 +24,9 @@ void BlockService::cleanup(){
         while( iter != cacheQueue.end()){
             auto item = *iter;
             if( item->modified ){
+#ifdef CAUCHY_DEBUG
                 printf("write back at fid = %d, blk = %d\n", item->fid, (int) item->offset);
+#endif
                 fileService->writeBlock(item->fid, item->offset, item->value);
             }
             delete item;
@@ -38,7 +42,9 @@ BlockService::~BlockService(){
     while( iter != accessQueue.end()){
         auto item = *iter;
         if( item->modified ){
+#ifdef CAUCHY_DEBUG
             printf("[~] write back at fid = %d, blk = %d\n", item->fid, (int) item->offset);
+#endif
             fileService->writeBlock(item->fid, item->offset, item->value);
         }
         delete item;
@@ -49,7 +55,9 @@ BlockService::~BlockService(){
     while( iter != cacheQueue.end()){
         auto item = *iter;
         if( item->modified ){
+#ifdef CAUCHY_DEBUG
             printf("[~] write back at fid = %d, blk = %d\n", item->fid, (int) item->offset);
+#endif
             fileService->writeBlock(item->fid, item->offset, item->value);
         }
         delete item;
@@ -106,6 +114,8 @@ BlockItem * BlockService::getBlock(int fid, int offset){
     item->flag = 0;
     item->value = fileService->readBlock(fid, offset);
     accessQueue.push_front(item);
+#ifdef CAUCHY_DEBUG
     printf("load block at fid = %d, blk = %d\n", item->fid, (int) item->offset);
+#endif
     return item;
 }

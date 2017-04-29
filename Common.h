@@ -5,6 +5,8 @@
 #ifndef DB_COMMON_H
 #define DB_COMMON_H
 
+#define CAUCHY_DEBUG1
+
 #include <iostream>
 #include <cstdio>
 #include <unordered_map>
@@ -15,7 +17,7 @@
 #include <cassert>
 #include <map>
 #include "JSON/JSON.h"
-const int BLOCK_SIZE = 1024;
+const int BLOCK_SIZE = 8192 * 4;
 
 struct BlockItem{
     int fid;

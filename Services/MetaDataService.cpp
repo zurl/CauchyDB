@@ -12,7 +12,9 @@ MetaDataService::~MetaDataService(){
     }
 }
 DataBaseModel * MetaDataService::getDataBase(const std::string & name){
-    return dataBases[name];
+    auto iter = dataBases.find(name);
+    if( iter == dataBases.end()) return nullptr;
+    else return iter->second;
 }
 MetaDataService::MetaDataService(FileService * fileService, BlockService * blockService)
         :fileService(fileService),blockService(blockService){

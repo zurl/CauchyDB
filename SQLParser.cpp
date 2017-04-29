@@ -32,7 +32,6 @@ InsertQueryPlan *SQLParser::parseInsertStatement() {
     auto result = new InsertQueryPlan(table);
     int cur = 0;
     char * data = (char *)result->getData();
-    char * sdata = (char *)result->getData();
     while( pos < tokens.size()) {
         auto columnModel = table->getColumn(columns[cur]);
         if(token.type == TokenType::integer){
@@ -60,8 +59,6 @@ InsertQueryPlan *SQLParser::parseInsertStatement() {
         pos ++; token = tokens[pos]; // ,
         cur ++;
     }
-    printf("=====\n");
-    for(int i=0;i<=10;i++)putchar(sdata[i]);
     pos ++; token = tokens[pos]; // )
     if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
     pos ++; token = tokens[pos]; // ;
@@ -458,6 +455,7 @@ SelectQueryPlan * SQLParser::parseSelectStatement() {
     }
     pos ++; token = tokens[pos];//FROM
     TableModel * table = sqlSession->getTable(std::string(str, token.begin, token.end - token.begin + 1));
+    if(table == nullptr) throw SQLExecuteException(2, "No Such Table");
     SQLWhereClause * where = nullptr;
     QueryScanner * scanner = nullptr;
     pos ++; token = tokens[pos];//tableName

@@ -28,6 +28,14 @@ using namespace std;
  *
  */
 
+#include<sys/time.h>
+long long getTime(){
+    struct  timeval    tv;
+    struct  timezone   tz;
+    gettimeofday(&tv,&tz);
+    return tv.tv_usec + tv.tv_sec * 1000000;
+}
+
 class ApplicationContainer{
 public:
     BlockService * blockService;
@@ -56,7 +64,6 @@ public:
         recordService = new RecordService(blockService);
         metaDataService = new MetaDataService(fileService, blockService);
     }
-
     void testSQLBatch(){
         auto session = new SQLSession(metaDataService, nullptr, recordService, blockService);
         auto parser = new SQLParser(session);
@@ -65,10 +72,35 @@ public:
         while(true){
             cin.getline(x, 210);
             if(x[0] == '@')break;
+            if(x[0] == '#'){
+                long long f = getTime();
+                //session->loadDatabase("madan");
+                for(int i = 0; i <= 100000; i++){
+                    auto str = std::string("insert into mdzz (id, value) values (")
+                    + std::string(itos(i)) + ",1.1);";
+                    auto sql = parser->parseSQLStatement(str.c_str());
+                    std::string();
+                    sql->runQuery(recordService);
+                }
+                long long e = getTime();
+                std::cout<<"In : "<<e-f<<" ns."<<std::endl;
+            }
             try{
+                long long f = getTime();
                 auto sql = parser->parseSQLStatement(x);
+                if(!sql){
+                    std::cout <<"[ERROR] Invalid SQL Command"<<std::endl;
+                    continue;
+                }
                 std::cout<<sql->toJSON()->toString(true)<<endl;
-                std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
+                auto result = sql->runQuery(recordService);
+                long long e = getTime();
+                if(!result){
+                    std::cout <<"[ERROR] Invalid SQL Command"<<std::endl;
+                    continue;
+                }
+                std::cout<<result->toString(true)<<endl;
+                std::cout<<"In : "<<e-f<<" ns."<<std::endl;
             }catch(SQLException & e){
                 std::cout<<"[ERROR]("<<e.code<<") : "<<e.message<<std::endl;
             }
