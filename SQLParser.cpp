@@ -322,7 +322,7 @@ std::list<AbstractSQLCondition *> *SQLParser::parseWhereClause(TableModel *table
             else if(tokencmp(ope, "<=")){
                 type = AbstractSQLCondition::Type::lte;
             }
-            else if(tokencmp(ope, "<>")){
+            else if(tokencmp(ope, "<>") || tokencmp(ope, "!=")){
                 type = AbstractSQLCondition::Type::neq;
             }
             else if(tokencmp(ope, "=")){
@@ -402,7 +402,6 @@ std::pair<QueryScanner *, SQLWhereClause *> SQLParser::getQueryScanner(TableMode
             continue;
         }
         where->addCondition(item);
-
     }
     if(status == 1){
         scanner = new OneIndexQueryScanner(

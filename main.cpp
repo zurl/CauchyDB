@@ -15,19 +15,6 @@
 #include "SQLParser.h"
 using namespace std;
 
-
-
-/*
- * a>=35 && a<=35
- * SQL => QueryPlan
- * QueryPlan
- * type => select
- * front => linear / index
- *      index: { on : "primiary", "
- *
- *
- */
-
 #include<sys/time.h>
 long long getTime(){
     struct  timeval    tv;
@@ -67,10 +54,13 @@ public:
     void testSQLBatch(){
         auto session = new SQLSession(metaDataService, nullptr, recordService, blockService);
         auto parser = new SQLParser(session);
-        char x[256];
+        char x[1024];
         //session->loadDatabase("fuck");
         while(true){
-            cin.getline(x, 210);
+            char c; char *ptr = x;
+            while((c=getchar())!=';')*ptr++ = c;
+            *ptr++ = ';';
+            *ptr++ = 0;
             if(x[0] == '@')break;
             if(x[0] == '#'){
                 long long f = getTime();
@@ -224,32 +214,10 @@ const char * itos(int i){
 
 
 
-
-//BPlusTree<char[16]> bPlusTree;
-//int main(){
-//    bPlusTree.T_BPLUS_TEST();
-//    return 0;
-//}
-//
-//
-//int main2(){
-//    tokenize();
-//    for(auto & x : tokens){
-//        for(int i = x.begin; i <= x.end; i++)putchar(str[i]);
-//        printf("\n");
-//    }
-//    return 0;
-//}
-
 int main(){
     ApplicationContainer applicationContainer;
     applicationContainer.start();
     applicationContainer.testSQLBatch();
-    //int fid = applicationContainer.fileService->openFile("test.idx");
-//    BPlusTree<char[16]> bPlusTree(applicationContainer.blockService, fid);
-//    bPlusTree.T_BPLUS_TEST();
-    //applicationContainer.testBlock();
-   // applicationContainer.testQueryScanner(fid);
     return 0;
 }
 

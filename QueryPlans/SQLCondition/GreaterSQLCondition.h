@@ -15,13 +15,13 @@ public:
     template<class Q = T>
     inline typename std::enable_if<!std::is_same<Q, char *>::value, bool>::type basicFilter(void * data)
     {
-        return *(T *)data > BasicSQLCondition<T>::value;
+        return *(T *)((char *)data + BasicSQLCondition<T>::on) > BasicSQLCondition<T>::value;
     }
 
      template<class Q = T>
      inline typename std::enable_if<std::is_same<Q, char *>::value, bool>::type basicFilter(void * data)
     {
-        char * str = (char *) data;
+        char * str = ((char *) data) + BasicSQLCondition<T>::on;
         for(int i = 0; i < this->size; i++){
             if(str[i] > this->value[i]) return true;
             if(str[i] < this->value[i]) return false;

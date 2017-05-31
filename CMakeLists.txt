@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 project(db)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -O3")
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall")
 
 set(SOURCE_FILES
         main.cpp
@@ -53,6 +53,18 @@ set(SOURCE_FILES
         QueryPlans/CreateTableQueryPlan.cpp
         QueryPlans/CreateTableQueryPlan.h
         QueryPlans/CreateDataBaseQueryPlan.cpp
-        QueryPlans/CreateDataBaseQueryPlan.h QueryPlans/InterpreterQueryPlan.cpp QueryPlans/InterpreterQueryPlan.h QueryPlans/SQLCondition/AbstractSQLCondition.h QueryPlans/SQLCondition/BasicSQLCondition.h QueryPlans/SQLCondition/GreaterSQLCondition.h QueryPlans/SQLCondition/SQLConditionUtils.h QueryPlans/SQLCondition/SQLConditionFactory.h)
+        QueryPlans/CreateDataBaseQueryPlan.h
+        QueryPlans/InterpreterQueryPlan.cpp
+        QueryPlans/InterpreterQueryPlan.h
+        QueryPlans/SQLCondition/EqualSQLCondition.h
+        QueryPlans/SQLCondition/GreaterOrEqualSQLCondition.h
+        QueryPlans/SQLCondition/LessOrEqualSQLCondition.h
+        QueryPlans/SQLCondition/LessSQLCondition.h
+        QueryPlans/SQLCondition/NotEqualSQLCondition.h
+        QueryPlans/SQLCondition/AbstractSQLCondition.h
+        QueryPlans/SQLCondition/BasicSQLCondition.h
+        QueryPlans/SQLCondition/GreaterSQLCondition.h
+        QueryPlans/SQLCondition/SQLConditionUtils.h
+        QueryPlans/SQLCondition/SQLConditionFactory.h)
 
 add_executable(db ${SOURCE_FILES})
