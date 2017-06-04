@@ -5,7 +5,7 @@
 #ifndef DB_CREATEQUERYPLAN_H
 #define DB_CREATEQUERYPLAN_H
 
-#include "QueryPlan.h"
+#include "../QueryPlan.h"
 
 class CreateQueryPlan : public QueryPlan{
 

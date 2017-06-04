@@ -5,6 +5,11 @@
 #include "SQLParser.h"
 #include "QueryPlans/SQLCondition/SQLConditionFactory.h"
 #include "QueryPlans/InterpreterQueryPlan.h"
+#include "QueryPlans/DDL/DropQueryPlan.h"
+#include "QueryPlans/DDL/DropDataBaseQueryPlan.h"
+#include "QueryPlans/DDL/DropTableQueryPlan.h"
+#include "QueryPlans/DDL/CreateIndexQueryPlan.h"
+#include "QueryPlans/DDL/DropIndexQueryPlan.h"
 
 InsertQueryPlan *SQLParser::parseInsertStatement() {
     //auto insertQueryPlan = new InsertQueryPlan();
@@ -139,8 +144,60 @@ CreateQueryPlan *SQLParser::parseCreateStatement() {
         if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
         return new CreateDataBaseQueryPlan(name, sqlSession);
     }
+    else if( tokencmp(token, "index") ){
+        token = tokens[pos]; pos ++;// index name;
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string name(str, token.begin, token.end - token.begin + 1);
+        if(!tokencmp(token, "on") ) throw SQLSyntaxException(2, "syntax error");
+        token = tokens[pos]; pos ++;// on
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string table(str, token.begin, token.end - token.begin + 1);
+        token = tokens[pos]; pos ++;// table
+        if(str[token.begin] != '(') throw SQLSyntaxException(2, "syntax error");
+        token = tokens[pos]; pos ++;// (
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string column(str, token.begin, token.end - token.begin + 1);
+        token = tokens[pos]; pos ++;// column
+        if(str[token.begin] != ')') throw SQLSyntaxException(2, "syntax error");
+        token = tokens[pos]; pos ++;// )
+        if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
+        return new CreateIndexQueryPlan(column, name, table, sqlSession);
+    }
     throw SQLSyntaxException(2, "syntax error");
 }
+
+DropQueryPlan *SQLParser::parseDropStatement() {
+    Token token = tokens[pos]; pos ++;
+    if( tokencmp(token, "table") ){
+        token = tokens[pos]; pos ++;// table;
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string name(str, token.begin, token.end - token.begin + 1);
+        token = tokens[pos]; pos ++;// ;
+        if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
+        return new DropTableQueryPlan(name, sqlSession);
+    }
+    else if( tokencmp(token, "database") ){
+        token = tokens[pos]; pos ++;// database;
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string name(str, token.begin, token.end - token.begin + 1);
+        token = tokens[pos]; pos ++;// ;
+        if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
+        return new DropDataBaseQueryPlan(name, sqlSession);
+    }
+    else if( tokencmp(token, "index") ){
+        token = tokens[pos]; pos ++;// database;
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string name(str, token.begin, token.end - token.begin + 1);
+        token = tokens[pos]; pos ++;//
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string table(str, token.begin, token.end - token.begin + 1);
+        token = tokens[pos]; pos ++;//;
+        if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
+        return new DropIndexQueryPlan(name, table, sqlSession);
+    }
+    throw SQLSyntaxException(2, "syntax error");
+}
+
 
 QueryPlan *SQLParser::parseSQLStatement(const char *str) {
     this->str = str;
@@ -151,6 +208,9 @@ QueryPlan *SQLParser::parseSQLStatement(const char *str) {
     if(tokencmp(token, "select")){
         if( sqlSession->getDataBaseModel() == nullptr)throw SQLExecuteException(0, "no database selected");
         return parseSelectStatement();
+    }
+    else if( tokencmp(token, "drop")){
+        return parseDropStatement();
     }
     else if( tokencmp(token, "delete")){
         //TODO:: delete

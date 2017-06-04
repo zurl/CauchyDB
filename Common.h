@@ -17,7 +17,24 @@
 #include <cassert>
 #include <map>
 #include "JSON/JSON.h"
+#include "Exception.h"
+
 const int BLOCK_SIZE = 8192 * 4;
+
+namespace Util {
+    inline int stoi(const std::string &str) {
+        std::istringstream is(str);
+        int i;
+        is >> i;
+        return i;
+    }
+
+    inline std::string itos(int i) {
+        std::ostringstream os;
+        os << i;
+        return os.str();
+    }
+}
 
 struct BlockItem{
     int fid;
@@ -40,32 +57,6 @@ public:
     }
 };
 
-class SQLException{
-public:
-    int code;
-    std::string message;
-    inline SQLException(int code = 0, std::string && message = "")
-            :code(code), message(message){};
-};
-
-class SQLExecuteException: public SQLException{
-public:
-    inline SQLExecuteException(int code = 0, std::string && message = "")
-            :SQLException(code, std::move(message)){}
-
-};
-
-class SQLSyntaxException: public SQLException{
-public:
-    inline SQLSyntaxException(int code = 0, std::string && message = "")
-            :SQLException(code, std::move(message)){}
-};
-
-class SQLTypeException: public SQLException{
-public:
-    inline SQLTypeException(int code = 0, std::string && message = "")
-            :SQLException(code, std::move(message)){}
-};
 
 template<typename Type>
 class TypeUtil {

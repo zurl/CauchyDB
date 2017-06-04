@@ -8,14 +8,15 @@
 #include "SQLSession.h"
 #include "QueryPlans/SelectQueryPlan.h"
 #include "QueryPlans/InsertQueryPlan.h"
-#include "QueryPlans/CreateQueryPlan.h"
-#include "QueryPlans/CreateTableQueryPlan.h"
-#include "QueryPlans/CreateDataBaseQueryPlan.h"
+#include "QueryPlans/DDL/CreateQueryPlan.h"
+#include "QueryPlans/DDL/CreateTableQueryPlan.h"
+#include "QueryPlans/DDL/CreateDataBaseQueryPlan.h"
 #include "Scanners/QueryScanner.h"
 #include "Scanners/LinearQueryScanner.h"
 #include "Scanners/OneIndexQueryScanner.h"
 #include "Scanners/RangeIndexQueryScanner.h"
 #include "QueryPlans/SQLCondition/SQLConditionFactory.h"
+#include "QueryPlans/DDL/DropQueryPlan.h"
 
 class SQLParser{
     SQLSession * sqlSession;
@@ -73,6 +74,8 @@ public:
     CreateQueryPlan * parseCreateStatement();
 
     QueryPlan * parseSQLStatement(const char * str);
+
+    DropQueryPlan *parseDropStatement() ;
 
     inline void test(){
         for(auto & x: tokens){

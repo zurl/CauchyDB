@@ -5,8 +5,8 @@
 #ifndef DB_CREATEDATABASEQUERYPLAN_H
 #define DB_CREATEDATABASEQUERYPLAN_H
 #include "CreateQueryPlan.h"
-#include "QueryPlan.h"
-#include "../SQLSession.h"
+#include "../QueryPlan.h"
+#include "../../SQLSession.h"
 
 class CreateDataBaseQueryPlan: public CreateQueryPlan{
     std::string name;

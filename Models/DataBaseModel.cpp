@@ -6,7 +6,7 @@
 
 
 DataBaseModel::DataBaseModel(FileService * fileService, BlockService * blockService, const std::string & name, JSON * config)
-:fileService(fileService),name(name),blockService(blockService){
+:fileService(fileService),blockService(blockService),name(name){
     if( config != nullptr){
         JSONObject * data = config->get("tables")->toObject();
         for(auto & table: data->getHashMap()){
@@ -42,4 +42,8 @@ JSON *DataBaseModel::toJSON() {
 bool DataBaseModel::hasTable(const std::string &str) {
     auto iter = tables.find(str);
     return iter != tables.end();
+}
+
+void DataBaseModel::dropTable(const std::string &str) {
+    tables.erase(str);
 }

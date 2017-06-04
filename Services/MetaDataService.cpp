@@ -54,3 +54,7 @@ void MetaDataService::saveIntoFile() {
     fputs(json->toString(true).c_str(), fp);
     fclose(fp);
 }
+
+void MetaDataService::dropDataBase(const std::string &name) {
+    dataBases.erase(name);
+}

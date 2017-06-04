@@ -23,6 +23,10 @@ class TableModel{
 public:
     TableModel(FileService * fileService, BlockService * blockService, std::string && name, JSON * config, bool create);
 
+    void createIndex(const std::string& name, const std::string &column);
+
+    void dropIndex(const std::string & column);
+
     IndexModel * findIndexOn(int cid)  ;
 
     inline int getColumnCnt(){

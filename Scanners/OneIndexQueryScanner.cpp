@@ -5,8 +5,8 @@
 
 
 OneIndexQueryScanner::OneIndexQueryScanner(AbstractIndexRunner * indexRunner,RecordService * recordService, int len, int tfid,
-                     void * value, std::string on) : QueryScanner(len,recordService),indexRunner(indexRunner), tfid(tfid),
-                                                     value(value), on(on) {}
+                     void * value, std::string on) : QueryScanner(len,recordService),indexRunner(indexRunner), tfid(tfid), on(on),
+                                                     value(value) {}
 
 void OneIndexQueryScanner::scan(std::function<void(int, void *)> consumer)  {
     int ptr = indexRunner->findOne(value);

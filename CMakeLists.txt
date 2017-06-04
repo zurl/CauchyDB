@@ -20,7 +20,6 @@ set(SOURCE_FILES
         Configuration.h
         Services/RecordService.cpp
         Services/RecordService.h
-        QueryFilter.h
         Scanners/QueryScanner.cpp
         Scanners/QueryScanner.h
         Scanners/LinearQueryScanner.h
@@ -42,6 +41,16 @@ set(SOURCE_FILES
         Services/MetaDataService.h
         Models/DataBaseModel.cpp
         Models/DataBaseModel.h
+        Network/TCP/TCPServer.cpp
+        Network/HTTP/HTTPMethod.h
+        Network/HTTP/HTTPServer.h
+        Network/HTTP/HTTPRequest.h
+        Network/HTTP/HTTPResponse.h
+        Network/HTTP/HTTPRequestHeader.h
+        Network/HTTP/HTTPResponseHeader.h
+        Network/HTTP/HTTPServer.h
+        Network/HTTP/HTTPContext.h
+        Network/HTTP/HTTPHeader.h
         QueryPlans/QueryPlan.h
         QueryPlans/InsertQueryPlan.cpp
         QueryPlans/InsertQueryPlan.h
@@ -49,11 +58,11 @@ set(SOURCE_FILES
         QueryPlans/SelectQueryPlan.h
         QueryPlans/SQLWhereClause.cpp
         QueryPlans/SQLWhereClause.h
-        QueryPlans/CreateQueryPlan.h
-        QueryPlans/CreateTableQueryPlan.cpp
-        QueryPlans/CreateTableQueryPlan.h
-        QueryPlans/CreateDataBaseQueryPlan.cpp
-        QueryPlans/CreateDataBaseQueryPlan.h
+        QueryPlans/DDL/CreateQueryPlan.h
+        QueryPlans/DDL/CreateTableQueryPlan.cpp
+        QueryPlans/DDL/CreateTableQueryPlan.h
+        QueryPlans/DDL/CreateDataBaseQueryPlan.cpp
+        QueryPlans/DDL/CreateDataBaseQueryPlan.h
         QueryPlans/InterpreterQueryPlan.cpp
         QueryPlans/InterpreterQueryPlan.h
         QueryPlans/SQLCondition/EqualSQLCondition.h
@@ -65,6 +74,11 @@ set(SOURCE_FILES
         QueryPlans/SQLCondition/BasicSQLCondition.h
         QueryPlans/SQLCondition/GreaterSQLCondition.h
         QueryPlans/SQLCondition/SQLConditionUtils.h
-        QueryPlans/SQLCondition/SQLConditionFactory.h)
+        QueryPlans/SQLCondition/SQLConditionFactory.h
+        QueryPlans/DDL/DropDataBaseQueryPlan.cpp
+        QueryPlans/DDL/DropDataBaseQueryPlan.h
+        QueryPlans/DDL/DropTableQueryPlan.cpp
+        QueryPlans/DDL/DropTableQueryPlan.h
+        QueryPlans/DDL/DropQueryPlan.h Exception.h QueryPlans/DDL/DropIndexQueryPlan.cpp QueryPlans/DDL/DropIndexQueryPlan.h QueryPlans/DDL/CreateIndexQueryPlan.cpp QueryPlans/DDL/CreateIndexQueryPlan.h)
 
 add_executable(db ${SOURCE_FILES})

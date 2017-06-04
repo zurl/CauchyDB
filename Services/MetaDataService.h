@@ -18,6 +18,7 @@ class MetaDataService{
 public:
     ~MetaDataService();
     void createDataBase(const std::string & name);
+    void dropDataBase(const std::string & name);
     DataBaseModel * getDataBase(const std::string & name);
     MetaDataService(FileService * fileService, BlockService * blockService);
     bool hasDatabase(const std::string &name);

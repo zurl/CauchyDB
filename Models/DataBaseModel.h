@@ -20,6 +20,7 @@ public:
     ~DataBaseModel();
     TableModel * getTableByName(const std::string & str);
     void createTable(const std::string & str, JSON * config);
+    void dropTable(const std::string & str);
     bool hasTable(const std::string & str);
     inline JSON * getTables(){
         JSONArray * jarr = new JSONArray();

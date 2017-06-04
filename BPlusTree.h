@@ -49,7 +49,7 @@ class BPlusTree{
     BlockService * blockService;
 public:
     BPlusTree(BlockService * blockService, int fid)
-            :blockService(blockService), fid(fid)
+            :fid(fid), blockService(blockService)
     {
         root = blockService->getBlock(fid, 0);
     }

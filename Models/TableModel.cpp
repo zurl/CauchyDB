@@ -64,3 +64,17 @@ int TableModel::getColumnIndex(const std::string & str) const {
     if( iter == keyindex.end()) throw SQLExecuteException(1, "unknown column");
     return iter->second;
 }
+
+void TableModel::createIndex(const std::string &name, const std::string &column) {
+    int id = keyindex[column];
+    indices.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(id),
+            std::forward_as_tuple(fileService, blockService, name + "_" + name, name, nullptr , lenTable[id], true, columns[id].getType(), columns[id].getSize())
+    );
+}
+
+void TableModel::dropIndex(const std::string &column) {
+    int id = keyindex[column];
+    indices.erase(id);
+}

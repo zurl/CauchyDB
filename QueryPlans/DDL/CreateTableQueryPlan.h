@@ -5,9 +5,9 @@
 #ifndef DB_CREATETABLEQUERYPLAN_H
 #define DB_CREATETABLEQUERYPLAN_H
 
-#include "QueryPlan.h"
+#include "../QueryPlan.h"
 #include "CreateQueryPlan.h"
-#include "../SQLSession.h"
+#include "../../SQLSession.h"
 
 
 class CreateTableQueryPlan : public CreateQueryPlan{

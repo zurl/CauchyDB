@@ -5,8 +5,7 @@
 #include "CreateTableQueryPlan.h"
 
 CreateTableQueryPlan::CreateTableQueryPlan(const std::string &name, SQLSession *sqlSession, JSONArray *def, JSONObject *indices) : name(name),
-                                                                                                        sqlSession(
-                                                                                                                sqlSession)
+                                                                                                        sqlSession(sqlSession)
 {
     config = new JSONObject();
     config->set("columns", def);

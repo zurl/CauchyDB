@@ -2,16 +2,7 @@
 #include "Common.h"
 #include "BPlusTree.h"
 #include "Configuration.h"
-#include "QueryFilter.h"
 #include "SQLSession.h"
-#include "Models/ColumnModel.h"
-#include "Models/IndexModel.h"
-#include "Models/TableModel.h"
-#include "Models/DataBaseModel.h"
-#include "Services/FileService.h"
-#include "Services/BlockService.h"
-#include "Services/MetaDataService.h"
-#include "Services/RecordService.h"
 #include "SQLParser.h"
 using namespace std;
 
@@ -58,7 +49,9 @@ public:
         //session->loadDatabase("fuck");
         while(true){
             char c; char *ptr = x;
-            while((c=getchar())!=';')*ptr++ = c;
+            while((c=getchar())!=';'){
+                *ptr++ = c;
+            }
             *ptr++ = ';';
             *ptr++ = 0;
             if(x[0] == '@')break;
@@ -103,10 +96,6 @@ public:
         auto parser = new SQLParser(session);
         parser->tokenize();
         parser->test();
-        //auto sql = parser->parseSQLStatement();
-//        std::cout<<sql->toJSON()->toString(true)<<endl;
-//        std::cout<<sql->runQuery(recordService)->toString(true)<<endl;
-//        std::cout<<metaDataService->toJSON()->toString(true)<<endl;
     }
 
 #define __fo(x) ((x) / BLOCK_SIZE )
