@@ -5,7 +5,7 @@
 #ifndef DB_ABSTRACTINDEXEXCUTER_H
 #define DB_ABSTRACTINDEXEXCUTER_H
 
-#include "Services/BlockService.h"
+#include "../Services/BlockService.h"
 
 class AbstractIndexRunner{
 public:
@@ -18,6 +18,9 @@ public:
             bool withRight, void * right, bool rightEqu,
             std::function<void(int, int)> consumer
     ) = 0;
+    virtual ~AbstractIndexRunner() {
+
+    }
 };
 
 #endif //DB_ABSTRACTINDEXEXCUTER_H

@@ -31,3 +31,7 @@ JSON * CreateTableQueryPlan::runQuery(RecordService *recordService)  {
     return JSONMessage(0, "acknowledged").toJSON();
 }
 
+CreateTableQueryPlan::~CreateTableQueryPlan() {
+    delete config;
+}
+

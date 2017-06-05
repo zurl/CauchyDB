@@ -5,7 +5,7 @@
 #ifndef DB_ONEINDEXQUERYSCANNER_H
 #define DB_ONEINDEXQUERYSCANNER_H
 #include "QueryScanner.h"
-#include "../BPlusTree.h"
+#include "../Index/BPlusTree.h"
 
 class OneIndexQueryScanner : public QueryScanner{
     AbstractIndexRunner * indexRunner;

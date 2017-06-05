@@ -34,6 +34,7 @@ class JSON{
     JSONDouble * toDouble();
     JSONArray * toArray();
     JSONObject * toObject();
+    JSONBoolean * toBoolean();
     virtual ~JSON() = default;
     virtual Type type() = 0;
 };

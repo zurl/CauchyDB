@@ -1,6 +1,6 @@
 
 #include "Common.h"
-#include "BPlusTree.h"
+#include "Index/BPlusTree.h"
 #include "Configuration.h"
 #include "SQLSession.h"
 #include "SQLParser.h"

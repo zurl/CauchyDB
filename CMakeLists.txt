@@ -9,7 +9,7 @@ set(SOURCE_FILES
         JSON/JSON.cpp
         JSON/JSON.h
         JSON/JSONParser.cpp
-        BPlusTree.h
+        Index/BPlusTree.h
         Common.h
         Services/BlockService.cpp
         Services/BlockService.h
@@ -31,8 +31,8 @@ set(SOURCE_FILES
         Models/TableModel.h
         Models/IndexModel.cpp
         Models/IndexModel.h
-        AbstractIndexRunner.h
-        IndexRunner.h
+        Index/AbstractIndexRunner.h
+        Index/IndexRunner.h
         Scanners/RangeIndexQueryScanner.cpp
         Scanners/OneIndexQueryScanner.cpp
         Scanners/LinearQueryScanner.cpp
@@ -79,6 +79,11 @@ set(SOURCE_FILES
         QueryPlans/DDL/DropDataBaseQueryPlan.h
         QueryPlans/DDL/DropTableQueryPlan.cpp
         QueryPlans/DDL/DropTableQueryPlan.h
-        QueryPlans/DDL/DropQueryPlan.h Exception.h QueryPlans/DDL/DropIndexQueryPlan.cpp QueryPlans/DDL/DropIndexQueryPlan.h QueryPlans/DDL/CreateIndexQueryPlan.cpp QueryPlans/DDL/CreateIndexQueryPlan.h)
+        QueryPlans/DDL/DropQueryPlan.h
+        Exception.h
+        QueryPlans/DDL/DropIndexQueryPlan.cpp
+        QueryPlans/DDL/DropIndexQueryPlan.h
+        QueryPlans/DDL/CreateIndexQueryPlan.cpp
+        QueryPlans/DDL/CreateIndexQueryPlan.h)
 
 add_executable(db ${SOURCE_FILES})

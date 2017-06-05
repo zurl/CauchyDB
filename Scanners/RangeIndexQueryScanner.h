@@ -6,7 +6,7 @@
 #define DB_RANGEINDEXQUERYSCANNER_H
 
 #include "QueryScanner.h"
-#include "../BPlusTree.h"
+#include "../Index/BPlusTree.h"
 
 class RangeIndexQueryScanner : public QueryScanner{
     AbstractIndexRunner * indexRunner;

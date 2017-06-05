@@ -17,10 +17,11 @@ class CreateTableQueryPlan : public CreateQueryPlan{
 public:
     CreateTableQueryPlan(const std::string &name, SQLSession *sqlSession, JSONArray *def, JSONObject *indices) ;
 
-
     JSON *toJSON() override ;
 
     JSON *runQuery(RecordService *recordService) override;
+
+    virtual ~CreateTableQueryPlan();
 };
 
 

@@ -135,6 +135,12 @@ JSONObject * JSON::toObject(){
     return jsonObject;
 }
 
+JSONBoolean * JSON::toBoolean(){
+    if( this->type() != JSON::Type::Boolean) return nullptr;
+    JSONBoolean * jsonBoolean = (JSONBoolean *)this;
+    return jsonBoolean;
+}
+
 JSONArray * JSON::toArray(){
     if( this->type() != JSON::Type::Array) return nullptr;
     JSONArray * jsonArray = (JSONArray *)this;

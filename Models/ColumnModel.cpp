@@ -20,3 +20,7 @@ JSON * ColumnModel::toJSON(){
     }
     return json;
 }
+
+bool ColumnModel::isIsUnique() const {
+    return isUnique;
+}

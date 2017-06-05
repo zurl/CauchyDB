@@ -23,18 +23,23 @@ JSON *CreateIndexQueryPlan::runQuery(RecordService *recordService) {
     if(db->hasTable(table)){
         return JSONMessage(-1, "Table `" + table + "` already exists").toJSON();
     }
-    auto tb = db->getTableByName(table);
-    int id = tb->getColumnIndex(column);
-    auto ix = tb->getIndices();
-    auto iter = (*ix).find(id);
-    if(iter != (*ix).end()){
+    TableModel* tableModel = db->getTableByName(table);
+    int id = tableModel->getColumnIndex(column);
+    auto indices = tableModel->getIndices();
+    auto iter = (*indices).find(id);
+    if(iter != (*indices).end()){
         return JSONMessage(-1, "Column index `" + table + "` already exists").toJSON();
     }
-    for(auto & idx: *ix){
+    for(auto & idx: *indices){
         if(idx.second.getName() == name){
             return JSONMessage(-1, "Index `" + name + "` already exists").toJSON();
         }
     }
-    tb->createIndex(name, column);
+    tableModel->createIndex(name, column);
+    IndexModel * indexModel = tableModel->findIndexOn(id);
+    AbstractIndexRunner * indexRunner = indexModel->getIndexRunner();
+    recordService->scan(tableModel->getFid(), tableModel->getLen(), [indexRunner, indexModel](int offset, void * data){
+        indexRunner->insert(indexModel->getOn() + (char *)data, offset);
+    });
     return JSONMessage(0, "acknowledged").toJSON();
 }

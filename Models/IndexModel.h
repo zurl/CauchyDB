@@ -6,8 +6,8 @@
 #define DB_INDEXMODEL_H
 
 #include "../Services/FileService.h"
-#include "../AbstractIndexRunner.h"
-#include "../IndexRunner.h"
+#include "../Index/AbstractIndexRunner.h"
+#include "../Index/IndexRunner.h"
 
 
 class IndexModel{
@@ -23,6 +23,9 @@ class IndexModel{
                       const std::string & fname, const std::string & name,
                       JSON * config, int on, bool create, ColumnType columnType, int columnSize);
 
+    ~IndexModel(){
+        delete indexRunner;
+    }
     inline int getFid() const {
         return fid;
     }

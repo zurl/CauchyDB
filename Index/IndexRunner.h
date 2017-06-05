@@ -74,6 +74,10 @@ public:
     void initialize() override {
         bPlusTree.initialize();
     }
+
+    virtual ~IndexRunner() {
+
+    }
 };
 
 #endif //DB_INDEXEXCUTER_H
