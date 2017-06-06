@@ -101,25 +101,25 @@ public:
     virtual std::string toString(bool format = false, int indent = 0) override;
     virtual Type type() override;
     inline void set(const std::string & key, const std::string & value){
-        this->hashMap.emplace(key, new JSONString(value));
+        this->hashMap[key] = new JSONString(value);
     }
     inline void set(const std::string & key, const char * value){
-        this->hashMap.emplace(key, new JSONString(value));
+        this->hashMap[key] = new JSONString(value);
     }
     inline void set(const std::string & key, JSON * json){
-        this->hashMap.emplace(key, json);
+        this->hashMap[key] = json;
     }
     inline void set(const std::string & key, long long value){
-        this->hashMap.emplace(key, new JSONInteger(value));
+        this->hashMap[key] =new JSONInteger(value);
     }
     inline void set(const std::string & key, int value){
-        this->hashMap.emplace(key, new JSONInteger(value));
+        this->hashMap[key] = new JSONInteger(value);
     }
     inline void set(const std::string & key, double value){
-        this->hashMap.emplace(key, new JSONDouble(value));
+        this->hashMap[key] = new JSONDouble(value);
     }
     inline void set(const std::string & key, bool value){
-        this->hashMap.emplace(key, new JSONBoolean(value));
+        this->hashMap[key] = new JSONBoolean(value);
     }
     const std::unordered_map<std::string, JSON *> &getHashMap() const;
 

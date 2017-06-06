@@ -9,6 +9,7 @@ JSON * ColumnModel::toJSON(){
     auto json = new JSONObject();
     json->set("name", name);
     json->set("size", size);
+    json->set("unique", unique);
     if( type == ColumnType::Int){
         json->set("type", "int");
     }
@@ -19,8 +20,4 @@ JSON * ColumnModel::toJSON(){
         json->set("type", "char");
     }
     return json;
-}
-
-bool ColumnModel::isIsUnique() const {
-    return isUnique;
 }

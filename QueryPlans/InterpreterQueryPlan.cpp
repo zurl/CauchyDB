@@ -12,7 +12,7 @@ JSON *InterpreterQueryPlan::toJSON() {
 }
 
 JSON *InterpreterQueryPlan::runQuery(RecordService *recordService) {
-    if(type == "using"){
+    if(type == "use"){
         if(sqlSession->loadDatabase(value)){
             return JSONMessage(0, "acknowledged").toJSON();
         }else{

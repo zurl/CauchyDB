@@ -6,7 +6,7 @@
 
 RangeIndexQueryScanner::RangeIndexQueryScanner(AbstractIndexRunner * indexRunner, RecordService * recordService, int len, int tfid,
 void * left, void * right, bool leq, bool req, bool withLeft, bool withRight, std::string on) : QueryScanner(
-        len,recordService), left(left), right(right),on(on),indexRunner(indexRunner),tfid(tfid),   leq(leq), req(req),
+        len,recordService),indexRunner(indexRunner), left(left), right(right),on(on),tfid(tfid),   leq(leq), req(req),
                                                                                                 withLeft(withLeft), withRight(withRight) {}
 
 void RangeIndexQueryScanner::scan(std::function<void(int, void *)> consumer)  {

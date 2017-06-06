@@ -11,6 +11,9 @@ DropTableQueryPlan::DropTableQueryPlan(const std::string &name, SQLSession *sqlS
 
 JSON *DropTableQueryPlan::runQuery(RecordService *recordService)  {
     auto db = sqlSession->getDataBaseModel();
+    if(db == nullptr){
+        return JSONMessage(-1, "no database are selected").toJSON();
+    }
     if(!db->hasTable(name)){
         return JSONMessage(-1, "Table `" + name + "` does not exists").toJSON();
     }

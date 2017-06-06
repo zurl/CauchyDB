@@ -23,6 +23,9 @@ JSON *CreateTableQueryPlan::toJSON()  {
 
 JSON * CreateTableQueryPlan::runQuery(RecordService *recordService)  {
     auto db = sqlSession->getDataBaseModel();
+    if(db == nullptr){
+        return JSONMessage(-1, "no database are selected").toJSON();
+    }
     if(db->hasTable(name)){
         return JSONMessage(-1, "Table `" + name + "` is already exists").toJSON();
     }

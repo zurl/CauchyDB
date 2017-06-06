@@ -14,7 +14,7 @@ public:
         JSONObject * data = config->toObject();
         name = data->get("name")->toJString()->str.c_str();
         size = (int)data->get("size")->toInteger()->value;
-        isUnique = data->get("unique")->toBoolean()->value;
+        unique = data->get("unique")->toBoolean()->value;
         this->on = on;
         const char * typestr = data->get("type")->toJString()->str.c_str();
         if( strcmp(typestr, "int") == 0){
@@ -45,8 +45,8 @@ public:
         return on;
     }
 
-    bool isIsUnique() const {
-        return isUnique;
+    bool isUnique() const {
+        return unique;
     }
 
     JSON * toJSON();
@@ -55,7 +55,7 @@ private:
     int size;
     ColumnType type;
     int on;
-    bool isUnique;
+    bool unique;
 };
 
 #endif //DB_COLUMNMODEL_H

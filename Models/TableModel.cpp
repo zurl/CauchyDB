@@ -15,6 +15,7 @@ TableModel::TableModel(FileService * fileService, BlockService * blockService, s
     }
     fid = fileService->openFile(name.c_str());
     assert(fid != -1);
+
     JSONArray * data = config->get("columns")->toArray();
     int on = 0;
     for(auto & column: data->getElements()){

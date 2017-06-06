@@ -20,11 +20,18 @@ JSON *CreateIndexQueryPlan::toJSON() {
 
 JSON *CreateIndexQueryPlan::runQuery(RecordService *recordService) {
     auto db = sqlSession->getDataBaseModel();
+    if(db == nullptr){
+        return JSONMessage(-1, "no database are selected").toJSON();
+    }
     if(db->hasTable(table)){
         return JSONMessage(-1, "Table `" + table + "` already exists").toJSON();
     }
     TableModel* tableModel = db->getTableByName(table);
     int id = tableModel->getColumnIndex(column);
+    bool unique = tableModel->getColumn(id)->isUnique();
+    if(!unique){
+        return JSONMessage(-1, "this column is not unique").toJSON();
+    }
     auto indices = tableModel->getIndices();
     auto iter = (*indices).find(id);
     if(iter != (*indices).end()){

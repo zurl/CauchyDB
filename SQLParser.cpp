@@ -11,15 +11,18 @@
 #include "QueryPlans/DDL/CreateIndexQueryPlan.h"
 #include "QueryPlans/DDL/DropIndexQueryPlan.h"
 
+
+
 InsertQueryPlan *SQLParser::parseInsertStatement() {
-    //auto insertQueryPlan = new InsertQueryPlan();
     Token token = tokens[pos];
     std::vector<int> columns;
     if(!tokencmp(token, "into")) throw SQLSyntaxException(0, "syntax error");
-    pos++;token = tokens[pos]; //into
-    TableModel * table = sqlSession->getTable(std::string(str, token.begin, token.end - token.begin + 1));
+    pos++;token = tokens[pos];
+    if( token.type != TokenType::name )throw SQLSyntaxException(2, "syntax error");
+    std::string tableName(str, token.begin, token.end - token.begin + 1);
+    pos++;token = tokens[pos];
+    TableModel * table = sqlSession->getTable(tableName);
     if(table == nullptr)throw SQLExecuteException(0, "no table");
-    pos++;token = tokens[pos]; //name
     if(!tokencmp(token, "("))throw SQLSyntaxException(0, "syntax error");
     pos++;token = tokens[pos];// (
     while( pos < tokens.size()){
@@ -113,6 +116,11 @@ void SQLParser::parseCreateDefinition(JSONArray *defJson, JSONObject *indexJson)
         json->set("size", n);
     }
     else  throw SQLSyntaxException(2, "syntax error");
+    json->set("unique", false);
+    if(tokencmp(token, "unique")){
+        json->set("unique", true);
+        token = tokens[pos]; pos ++; // (
+    }
     defJson->put(json);
 }
 
@@ -134,6 +142,21 @@ CreateQueryPlan *SQLParser::parseCreateStatement() {
         }
         token = tokens[pos]; pos ++;// ;
         if(str[token.begin] != ';') throw SQLSyntaxException(2, "syntax error");
+        if(indexJson->get("primary") == nullptr){
+            throw SQLSyntaxException(10, "You must provide a primary key");
+        }
+        std::string & pkey = indexJson->get("primary")->toObject()->get("on")->toJString()->str;
+        bool flag = false;
+        for( auto & elem : defJson->toArray()->getElements()){
+            if( elem->get("name")->toJString()->str== pkey){
+                elem->toObject()->set("unique", true);
+                flag = true;
+                break;
+            }
+        }
+        if( !flag ){
+            throw SQLSyntaxException(10, "the primary key don't exist");
+        }
         return new CreateTableQueryPlan(name, sqlSession, defJson, indexJson);
     }
     else if( tokencmp(token, "database") ){
@@ -222,11 +245,11 @@ QueryPlan *SQLParser::parseSQLStatement(const char *str) {
     else if( tokencmp(token, "create")){
         return parseCreateStatement();
     }
-    else if( tokencmp(token, "using")){
+    else if( tokencmp(token, "use")){
         token = tokens[pos]; pos ++;// database;
         if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
         std::string name(str, token.begin, token.end - token.begin + 1);
-        return new InterpreterQueryPlan("using", name, sqlSession);
+        return new InterpreterQueryPlan("use", name, sqlSession);
     }
     else if( tokencmp(token, "show")){
         token = tokens[pos]; pos ++;// database;
