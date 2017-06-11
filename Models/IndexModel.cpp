@@ -7,6 +7,7 @@
 JSON * IndexModel::toJSON(const std::string & on) {
     auto json = new JSONObject();
     json->set("type", "bplus");
+    json->set("size", columnSize);
     json->set("on", on);
     return json;
 }

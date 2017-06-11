@@ -17,6 +17,7 @@
 #include "Scanners/RangeIndexQueryScanner.h"
 #include "QueryPlans/SQLCondition/SQLConditionFactory.h"
 #include "QueryPlans/DDL/DropQueryPlan.h"
+#include "QueryPlans/DeleteQueryPlan.h"
 
 class SQLParser{
     SQLSession * sqlSession;
@@ -72,6 +73,8 @@ public:
     void parseCreateDefinition(JSONArray * defJson, JSONObject * indexJson);
 
     CreateQueryPlan * parseCreateStatement();
+
+    DeleteQueryPlan * parseDeleteStatement();
 
     QueryPlan * parseSQLStatement(const char * str);
 

@@ -23,6 +23,7 @@ template<>
 class IndexRunnerWrapper<int>{
 public:
     static int convert(void * data){
+        if(data == nullptr)return 0;
         return *(int *)data;
     }
     static ColumnType getType(){
@@ -34,6 +35,7 @@ template<>
 class IndexRunnerWrapper<double>{
 public:
     static double convert(void * data){
+        if(data == nullptr)return 0;
         return *(double *)data;
     }
     static ColumnType getType(){
@@ -65,6 +67,10 @@ public:
                 withRight, IndexRunnerWrapper<T>::convert(right), rightEqu,
                 consumer
         );
+    }
+
+    bool remove(void *key) override {
+        return bPlusTree.remove(IndexRunnerWrapper<T>::convert(key));
     }
 
     virtual ColumnType getType() override {

@@ -9,10 +9,13 @@ void * left, void * right, bool leq, bool req, bool withLeft, bool withRight, st
         len,recordService),indexRunner(indexRunner), left(left), right(right),on(on),tfid(tfid),   leq(leq), req(req),
                                                                                                 withLeft(withLeft), withRight(withRight) {}
 
-void RangeIndexQueryScanner::scan(std::function<void(int, void *)> consumer)  {
+void RangeIndexQueryScanner::scan(std::function<bool(int, void *)> consumer)  {
+    int cnt = 0;
     indexRunner->findByRange(withLeft, left, leq, withRight, right, req,
-                             [consumer, this](int id, int blk){
-                                 recordService->read(tfid, blk / BLOCK_SIZE, blk % BLOCK_SIZE, len);
+                             [consumer, this, &cnt](int id, int blk){
+                                 if((consumer(cnt++,recordService->read(tfid, blk / BLOCK_SIZE, blk % BLOCK_SIZE, len)))){
+                                    recordService->remove(tfid, blk / BLOCK_SIZE, blk % BLOCK_SIZE, len);
+                                 }
                              });
 }
 

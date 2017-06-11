@@ -20,7 +20,7 @@ public:
     RangeIndexQueryScanner(AbstractIndexRunner * indexRunner, RecordService * recordService, int len, int tfid,
                            void * left, void * right, bool leq, bool req, bool withLeft, bool withRight, std::string on);
 
-    void scan(std::function<void(int, void *)> consumer) override ;
+    void scan(std::function<bool(int, void *)> consumer) override ;
 
     JSON *toJSON() override ;
 };

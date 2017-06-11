@@ -84,6 +84,6 @@ set(SOURCE_FILES
         QueryPlans/DDL/DropIndexQueryPlan.cpp
         QueryPlans/DDL/DropIndexQueryPlan.h
         QueryPlans/DDL/CreateIndexQueryPlan.cpp
-        QueryPlans/DDL/CreateIndexQueryPlan.h)
+        QueryPlans/DDL/CreateIndexQueryPlan.h QueryPlans/DeleteQueryPlan.cpp QueryPlans/DeleteQueryPlan.h)
 
 add_executable(db ${SOURCE_FILES})

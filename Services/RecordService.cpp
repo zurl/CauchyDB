@@ -58,32 +58,48 @@ int RecordService::insert(int fid, void * data, int len){
 void RecordService::remove(int fid, int block, int offset, int len){
     assert( len >= 8 );
     BlockItem * blockItem = blockService->getBlock(fid, block);
-    char * current = (char *)blockItem->value;
-    char * target = current + offset;
-    *(int *)target = *(int *)current;
-    *(int *)current = offset;
+    char * head = (char *)blockItem->value;
+    int * current = (int *)head;
+    // Find the first current > offset or current = 0
+    while( *current != 0 && *current < offset ){
+        current = (int * )(head + *current);
+    }
+    char * target = head + offset;
+    *(int *)target = *current;
+    *current = offset;
 }
 
-void RecordService::scan(int fid, int len, std::function<void(int, void *)> consumer)  {
+void RecordService::scan(int fid, int len, std::function<bool(int, void *)> consumer)  {
     int blkCnt = blockService->getBlockCnt(fid);
     int cnt = 0;
     for(int i = 0; i < blkCnt; i++){
         BlockItem * blk = blockService->getBlock(fid, i);
+        char * head = (char *) blk->value;
+        char * deleteHead = (char *)blk->value;
         int offset = *(int *)blk->value;
         int now = len;
         char * ptr = (char *)blk->value + len;
         while(offset != 0){
             while( now < offset){
-                consumer(++cnt, (void *)(ptr));
+                if(consumer(++cnt, (void *)(ptr))){
+                    *(int *)ptr = *(int *)deleteHead;
+                    *(int *)deleteHead = (int)(ptr - head);
+                    deleteHead = ptr;
+                }
                 ptr+=len;
                 now+=len;
             }
             offset = *(int *)ptr;
+            deleteHead = ptr;
             now += len;
             ptr += len;
         }
         while( now + len < BLOCK_SIZE){
-            consumer(++cnt, (void *)(ptr));
+            if(consumer(++cnt, (void *)(ptr))){
+                *(int *)ptr = *(int *)deleteHead;
+                *(int *)deleteHead = (int)(ptr - head);
+                deleteHead = ptr;
+            }
             ptr+=len;
             now+=len;
         }

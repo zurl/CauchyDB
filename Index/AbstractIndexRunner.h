@@ -13,6 +13,7 @@ public:
     virtual ColumnType getType() = 0;
     virtual int insert(void * key, int value) = 0;
     virtual int findOne(void * key) = 0;
+    virtual bool remove(void * key) = 0;
     virtual int findByRange(
             bool withLeft, void * left, bool leftEqu,
             bool withRight, void * right, bool rightEqu,

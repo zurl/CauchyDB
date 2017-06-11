@@ -28,26 +28,29 @@ JSON * InsertQueryPlan::runQuery( RecordService * recordService)  {
                 void * theData = this->data;
                 if( columnType == ColumnType::Int){
                     recordService->scan(tableModel->getFid(), tableModel->getLen(),[&flag, on, theData](int offset, void * row){
-                        if(flag) return;
+                        if(flag) return false;
                         if(TypeUtil<int>::cmp(*(int*)((char *)theData + on), *(int*)((char *)row + on)) == 0){
                             flag = true;
                         }
+                        return false;
                     });
                 }
                 else if(columnType == ColumnType::Float){
                     recordService->scan(tableModel->getFid(), tableModel->getLen(),[&flag, on, theData](int offset, void * row){
-                        if(flag) return;
+                        if(flag) return false;
                         if(TypeUtil<double>::cmp(*(double*)((char *)theData + on), *(double*)((char *)row + on)) == 0){
                             flag = true;
                         }
+                        return false;
                     });
                 }
                 else{
                     recordService->scan(tableModel->getFid(), tableModel->getLen(),[&flag, on, theData, columnSize](int offset, void * row){
-                        if(flag) return;
+                        if(flag) return false;
                         if(strncmp((char *)theData + on, (char *)row + on, columnSize)){
                             flag = true;
                         }
+                        return false;
                     });
                 }
                 if(flag){

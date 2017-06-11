@@ -39,7 +39,7 @@ public:
     }
 
     AbstractSQLCondition::Type getType() override {
-        return AbstractSQLCondition::Type::gt;
+        return AbstractSQLCondition::Type::lt;
     }
 
     ~LessSQLCondition() override {

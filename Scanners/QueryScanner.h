@@ -16,7 +16,7 @@ protected:
 public:
     QueryScanner(int len, RecordService *recordService);
     inline virtual ~QueryScanner(){};
-    virtual void scan(std::function<void(int, void *)> consumer) = 0;
+    virtual void scan(std::function<bool(int, void *)> consumer) = 0;
     virtual JSON * toJSON() = 0;
 };
 

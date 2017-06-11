@@ -9,7 +9,7 @@
 LinearQueryScanner::LinearQueryScanner(RecordService *recordService,int fid,int len) : QueryScanner(len, recordService),
                                                                              fid(fid) {}
 
-void LinearQueryScanner::scan(std::function<void(int, void *)> consumer)  {
+void LinearQueryScanner::scan(std::function<bool(int, void *)> consumer)  {
     return recordService->scan(fid, len, consumer);
 }
 

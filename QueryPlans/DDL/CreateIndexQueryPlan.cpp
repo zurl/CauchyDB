@@ -47,6 +47,7 @@ JSON *CreateIndexQueryPlan::runQuery(RecordService *recordService) {
     AbstractIndexRunner * indexRunner = indexModel->getIndexRunner();
     recordService->scan(tableModel->getFid(), tableModel->getLen(), [indexRunner, indexModel](int offset, void * data){
         indexRunner->insert(indexModel->getOn() + (char *)data, offset);
+        return false;
     });
     return JSONMessage(0, "acknowledged").toJSON();
 }

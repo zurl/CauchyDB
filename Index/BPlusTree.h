@@ -24,6 +24,7 @@ public:
 
 template<typename Type>
 const int NodeSize<Type>::NODE_SIZE = (BLOCK_SIZE - 4 - sizeof(int) ) / (sizeof(Type) + sizeof(int));
+
 #define NODE_SIZE_HALF ((NODE_SIZE + 1) / 2)
 template<typename Type>
 struct BasicNode{
@@ -49,8 +50,7 @@ class BPlusTree{
     BlockService * blockService;
 public:
     BPlusTree(BlockService * blockService, int fid)
-            :fid(fid), blockService(blockService)
-    {
+            :fid(fid), blockService(blockService){
         root = blockService->getBlock(fid, 0);
     }
 
@@ -249,6 +249,7 @@ public:
                     || (TypeUtil<Type>::cmp(node->v[i], left) == 0 && leftEqu)) {
                     find = true;
                     now = i;
+                    break;
                 }
             }
             if(!find){

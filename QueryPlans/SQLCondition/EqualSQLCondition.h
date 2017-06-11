@@ -40,7 +40,7 @@ public:
     }
 
     AbstractSQLCondition::Type getType() override {
-        return AbstractSQLCondition::Type::gt;
+        return AbstractSQLCondition::Type::eq;
     }
 
     ~EqualSQLCondition() override {

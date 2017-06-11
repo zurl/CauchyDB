@@ -12,7 +12,7 @@ class LinearQueryScanner : public QueryScanner{
 public:
     LinearQueryScanner(RecordService *recordService,int fid,int len);
 
-    void scan(std::function<void(int, void *)> consumer) override;
+    void scan(std::function<bool(int, void *)> consumer) override;
 
     JSON *toJSON() override;
 };

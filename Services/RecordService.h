@@ -22,7 +22,8 @@ public:
 
     void remove(int fid, int block, int offset, int len);
 
-    void scan(int fid, int len, std::function<void(int, void *)> consumer);
+    void scan(int fid, int len, std::function<bool(int, void *)> consumer);
+
 };
 
 

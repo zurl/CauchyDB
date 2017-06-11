@@ -69,6 +69,7 @@ public:
     static void set(Type &a, const char * b){
         strcpy(a, b);
     }
+
     static int cmp(const Type a, const Type b){
         int ret = strcmp((const char *)a, (const char *)b);
         if ( ret > 0) return 1;
@@ -91,8 +92,8 @@ public:
         a = b;
     }
     static int cmp(const int & a, const int & b){
-        if( a < b ) return 1;
-        if( a > b ) return -1;
+        if( a < b ) return -1;
+        if( a > b ) return 1;
         return 0;
     }
     static JSON * toJSON(int v){
@@ -108,8 +109,8 @@ public:
         a = b;
     }
     static int cmp(const double & a, const double & b){
-        if( a < b ) return 1;
-        if( a > b ) return -1;
+        if( a < b ) return -1;
+        if( a > b ) return 1;
         return 0;
     }
     static JSON * toJSON(double v){

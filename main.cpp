@@ -54,20 +54,7 @@ public:
             }
             *ptr++ = ';';
             *ptr++ = 0;
-            if(x[0] == '@')break;
-            if(x[0] == '#'){
-                long long f = getTime();
-                //session->loadDatabase("madan");
-                for(int i = 0; i <= 100000; i++){
-                    auto str = std::string("insert into mdzz (id, value) values (")
-                    + std::string(itos(i)) + ",1.1);";
-                    auto sql = parser->parseSQLStatement(str.c_str());
-                    std::string();
-                    sql->runQuery(recordService);
-                }
-                long long e = getTime();
-                std::cout<<"In : "<<e-f<<" ns."<<std::endl;
-            }
+            if(strncmp(x, "quit", 4) == 0||strncmp(x, "\nquit", 5) == 0) break;
             try{
                 long long f = getTime();
                 auto sql = parser->parseSQLStatement(x);
@@ -180,6 +167,7 @@ public:
         LinearQueryScanner * linearQueryScanner = new LinearQueryScanner(recordService, fid,len);
         linearQueryScanner->scan([](int id, void * ptr){
             printf("scan %lld => %s\n", (long long)id, ptr);
+            return false;
         });
     }
 };

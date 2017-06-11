@@ -236,7 +236,8 @@ QueryPlan *SQLParser::parseSQLStatement(const char *str) {
         return parseDropStatement();
     }
     else if( tokencmp(token, "delete")){
-        //TODO:: delete
+        if( sqlSession->getDataBaseModel() == nullptr)throw SQLExecuteException(0, "no database selected");
+        return parseDeleteStatement();
     }
     else if( tokencmp(token, "insert")){
         if( sqlSession->getDataBaseModel() == nullptr)throw SQLExecuteException(0, "no database selected");
@@ -391,7 +392,7 @@ std::list<AbstractSQLCondition *> *SQLParser::parseWhereClause(TableModel *table
                 sscanf(str + token.begin, "%lf", (double *)data);
                 sqlConditionFactory = DoubleSQLConditionFactory;
             }
-            else throw new SQLSyntaxException(0, "illegal operand");
+            else throw SQLSyntaxException(0, "illegal operand");
 
             if(tokencmp(ope, "<")){
                 type = AbstractSQLCondition::Type::lt;
@@ -411,7 +412,7 @@ std::list<AbstractSQLCondition *> *SQLParser::parseWhereClause(TableModel *table
             else if(tokencmp(ope, "=")){
                 type = AbstractSQLCondition::Type::eq;
             }
-            else throw new SQLSyntaxException(0, "illegal opes");
+            else throw SQLSyntaxException(0, "illegal opes");
 
             conditionList->emplace_back(sqlConditionFactory->createSQLCondition(
                   type,
@@ -508,7 +509,7 @@ std::pair<QueryScanner *, SQLWhereClause *> SQLParser::getQueryScanner(TableMode
                 r == nullptr ? true : r->getType() == AbstractSQLCondition::Type::lte,
                 l != nullptr,
                 r != nullptr,
-                table->getColumn(l->getCid())->getName()
+                table->getColumn(l == nullptr? r->getCid() : l->getCid())->getName()
         );
     }
     // === select index ===
@@ -561,4 +562,33 @@ SelectQueryPlan * SQLParser::parseSelectStatement() {
                 table->getFid(),
                 table->getLen());
     return new SelectQueryPlan(table, scanner, columns, where);
+}
+
+DeleteQueryPlan *SQLParser::parseDeleteStatement() {
+    Token token = tokens[pos];
+    if(!tokencmp(token, "from")) throw SQLSyntaxException(2, "syntax error");
+    pos ++; token = tokens[pos];//FROM
+    TableModel * table = sqlSession->getTable(std::string(str, token.begin, token.end - token.begin + 1));
+    if(table == nullptr) throw SQLExecuteException(2, "No Such Table");
+    SQLWhereClause * where = nullptr;
+    QueryScanner * scanner = nullptr;
+    pos ++; token = tokens[pos];//tableName
+    while(str[token.begin] != ';') {
+        if (tokencmp(token, "WHERE")) {
+            pos ++;
+            auto list = parseWhereClause(table);
+            auto tmp = getQueryScanner(table, list);
+            scanner = tmp.first;
+            where = tmp.second;
+        } else {
+            if (where != nullptr) delete where;
+            throw SQLSyntaxException(2, "syntax error");
+        }
+        token = tokens[pos];
+    }
+    if(scanner == nullptr)scanner = new LinearQueryScanner(
+                sqlSession->getRecordService(),
+                table->getFid(),
+                table->getLen());
+    return new DeleteQueryPlan(scanner, table, where);
 }
