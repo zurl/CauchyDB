@@ -24,7 +24,12 @@ SelectQueryPlan::SelectQueryPlan(TableModel * tableModel,
 }
 
 JSON *SelectQueryPlan::runQuery(RecordService *recordService)  {
+    auto json = new JSONObject();
     auto result = new JSONArray();
+    auto title = new JSONArray();
+    for(auto & column: columns){
+        title->put(new JSONString(tableModel->getColumn(column)->getName()));
+    }
     queryScanner->scan([this, result](int id, void *data){
         if(where != nullptr && !where->filter(data))return false;
         auto current = new JSONArray();
@@ -35,7 +40,9 @@ JSON *SelectQueryPlan::runQuery(RecordService *recordService)  {
         result->put(current);
         return false;
     });
-    return result;
+    json->set("status", 2);
+    json->set("data", result);
+    return json;
 }
 
 SelectQueryPlan::~SelectQueryPlan(){

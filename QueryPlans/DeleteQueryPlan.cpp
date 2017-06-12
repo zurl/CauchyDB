@@ -26,7 +26,7 @@ JSON *DeleteQueryPlan::runQuery(RecordService *recordService) {
     for(auto & data: target){
         free(data);
     }
-    return result;
+    return JSONIntegerMessage((int)target.size()).toJSON();
 }
 
 DeleteQueryPlan::~DeleteQueryPlan() {

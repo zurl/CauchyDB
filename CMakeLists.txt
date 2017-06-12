@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall")
 
 set(SOURCE_FILES
-        main.cpp
+        Main.cpp
         JSON/JSON.cpp
         JSON/JSON.h
         JSON/JSONParser.cpp
@@ -84,6 +84,6 @@ set(SOURCE_FILES
         QueryPlans/DDL/DropIndexQueryPlan.cpp
         QueryPlans/DDL/DropIndexQueryPlan.h
         QueryPlans/DDL/CreateIndexQueryPlan.cpp
-        QueryPlans/DDL/CreateIndexQueryPlan.h QueryPlans/DeleteQueryPlan.cpp QueryPlans/DeleteQueryPlan.h)
+        QueryPlans/DDL/CreateIndexQueryPlan.h QueryPlans/DeleteQueryPlan.cpp QueryPlans/DeleteQueryPlan.h Services/InterpreterService.cpp Services/InterpreterService.h ApplicationContainer.cpp ApplicationContainer.h)
 
 add_executable(db ${SOURCE_FILES})

@@ -24,8 +24,13 @@ public:
     bool hasTable(const std::string & str);
     inline JSON * getTables(){
         JSONArray * jarr = new JSONArray();
+        JSONArray * title = new JSONArray();
+        title->put(new JSONString("Tables"));
+        jarr->put(title);
         for(auto & pair : tables){
-            jarr->put(new JSONString(pair.first));
+            JSONArray * elem = new JSONArray();
+            elem->put(new JSONString(pair.first));
+            jarr->put(elem);
         }
         return jarr;
     }

@@ -75,7 +75,7 @@ JSON * InsertQueryPlan::runQuery( RecordService * recordService)  {
         iter->second.getIndexRunner()->insert((char *)data + on, recordId);
         iter ++;
     }
-    return JSONMessage(0, "acknowledged").toJSON();
+    return JSONIntegerMessage(1).toJSON();
 }
 
 JSON *InsertQueryPlan::toJSON()  {

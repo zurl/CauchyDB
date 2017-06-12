@@ -39,3 +39,11 @@ MetaDataService *SQLSession::getMetaDataService() const {
 void SQLSession::saveMetaData() const {
     metaDataService->saveIntoFile();
 }
+
+QueryPlan *SQLSession::getLastQueryPlan() const {
+    return lastQueryPlan;
+}
+
+void SQLSession::setLastQueryPlan(QueryPlan *lastQueryPlan) {
+    SQLSession::lastQueryPlan = lastQueryPlan;
+}

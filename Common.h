@@ -57,6 +57,18 @@ public:
     }
 };
 
+class JSONIntegerMessage{
+    int integer;
+public:
+    inline JSONIntegerMessage(int integer) :  integer(integer) {}
+    inline JSON * toJSON(){
+        auto json = new JSONObject();
+        json->set("status", 1);
+        json->set("data", integer);
+        return json;
+    }
+};
+
 
 template<typename Type>
 class TypeUtil {

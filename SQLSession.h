@@ -7,15 +7,14 @@
 #include "Common.h"
 #include "Services/RecordService.h"
 #include "Services/MetaDataService.h"
+#include "QueryPlans/QueryPlan.h"
 
 class SQLSession{
     MetaDataService * metaDataService;
-
-
-private:
     DataBaseModel * dataBaseModel;
     RecordService * recordService;
     BlockService * blockService;
+    QueryPlan * lastQueryPlan;
 public:
     SQLSession(MetaDataService *metaDataService, DataBaseModel *dataBaseModel, RecordService *recordService,
                BlockService *blockService) ;
@@ -28,6 +27,8 @@ public:
     MetaDataService *getMetaDataService() const;
     void saveMetaData() const;
     inline bool hasDataBase(const std::string & name){ return metaDataService->hasDatabase(name);}
+    QueryPlan *getLastQueryPlan() const;
+    void setLastQueryPlan(QueryPlan *lastQueryPlan);
 };
 
 

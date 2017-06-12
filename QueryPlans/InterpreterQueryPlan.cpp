@@ -20,17 +20,22 @@ JSON *InterpreterQueryPlan::runQuery(RecordService *recordService) {
         }
     }
     else if(type == "show"){
+        JSONObject * result = new JSONObject();
+        result->set("status", 2);
+        JSON * jarr = nullptr;
         if(value == "tables"){
-            return sqlSession->getDataBaseModel()->getTables();
+            if(sqlSession->getDataBaseModel() == nullptr)
+                throw SQLExecuteException(5, "NO DATABASE Selected");
+            jarr = sqlSession->getDataBaseModel()->getTables();
         }
         else if(value == "databases"){
-            return sqlSession->getMetaDataService()->getDatabases();
+            jarr = sqlSession->getMetaDataService()->getDatabases();
         }
+        else throw SQLExecuteException(5, "unknown operation");
+        result->set("data", jarr);
+        return result;
     }
-    else if(type == "describe"){
-        return nullptr;
-    }
-    return nullptr;
+    else throw SQLExecuteException(5, "unknown operation");
 }
 
 InterpreterQueryPlan::InterpreterQueryPlan(const std::string &type, const std::string &value, SQLSession *sqlSession)

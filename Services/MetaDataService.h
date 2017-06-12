@@ -26,8 +26,13 @@ public:
     void saveIntoFile();
     inline JSON * getDatabases(){
         JSONArray * jarr = new JSONArray();
+        JSONArray * title = new JSONArray();
+        title->put(new JSONString("Databases"));
+        jarr->put(title);
         for(auto & pair : dataBases){
-            jarr->put(new JSONString(pair.first));
+            JSONArray * elem = new JSONArray();
+            elem->put(new JSONString(pair.first));
+            jarr->put(elem);
         }
         return jarr;
     }
