@@ -116,6 +116,7 @@ void SQLParser::parseCreateDefinition(JSONArray *defJson, JSONObject *indexJson)
         json->set("size", n);
     }
     else  throw SQLSyntaxException(2, "syntax error");
+    token = tokens[pos];
     json->set("unique", false);
     if(tokencmp(token, "unique")){
         json->set("unique", true);
@@ -168,9 +169,10 @@ CreateQueryPlan *SQLParser::parseCreateStatement() {
         return new CreateDataBaseQueryPlan(name, sqlSession);
     }
     else if( tokencmp(token, "index") ){
-        token = tokens[pos]; pos ++;// index name;
+        token = tokens[pos]; pos ++;// index
         if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
         std::string name(str, token.begin, token.end - token.begin + 1);
+        token = tokens[pos]; pos ++;// name;
         if(!tokencmp(token, "on") ) throw SQLSyntaxException(2, "syntax error");
         token = tokens[pos]; pos ++;// on
         if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
@@ -257,6 +259,12 @@ QueryPlan *SQLParser::parseSQLStatement(const char *str) {
         if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
         std::string name(str, token.begin, token.end - token.begin + 1);
         return new InterpreterQueryPlan("show", name, sqlSession);
+    }
+    else if( tokencmp(token, "set")){
+        token = tokens[pos]; pos ++;// database;
+        if(token.type != TokenType::name)throw SQLSyntaxException(2, "syntax error");
+        std::string name(str, token.begin, token.end - token.begin + 1);
+        return new InterpreterQueryPlan("set", name, sqlSession);
     }
     else if( tokencmp(token, "describe")){
         token = tokens[pos]; pos ++;// database;

@@ -47,3 +47,11 @@ QueryPlan *SQLSession::getLastQueryPlan() const {
 void SQLSession::setLastQueryPlan(QueryPlan *lastQueryPlan) {
     SQLSession::lastQueryPlan = lastQueryPlan;
 }
+
+bool SQLSession::isFlush() const {
+    return flush;
+}
+
+void SQLSession::setFlush(bool flush) {
+    SQLSession::flush = flush;
+}

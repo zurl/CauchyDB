@@ -15,6 +15,8 @@ class SQLSession{
     RecordService * recordService;
     BlockService * blockService;
     QueryPlan * lastQueryPlan;
+
+    bool flush = true;
 public:
     SQLSession(MetaDataService *metaDataService, DataBaseModel *dataBaseModel, RecordService *recordService,
                BlockService *blockService) ;
@@ -29,6 +31,10 @@ public:
     inline bool hasDataBase(const std::string & name){ return metaDataService->hasDatabase(name);}
     QueryPlan *getLastQueryPlan() const;
     void setLastQueryPlan(QueryPlan *lastQueryPlan);
+
+    bool isFlush() const;
+
+    void setFlush(bool flush);
 };
 
 

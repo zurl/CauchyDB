@@ -30,6 +30,7 @@ JSON *SelectQueryPlan::runQuery(RecordService *recordService)  {
     for(auto & column: columns){
         title->put(new JSONString(tableModel->getColumn(column)->getName()));
     }
+    result->put(title);
     queryScanner->scan([this, result](int id, void *data){
         if(where != nullptr && !where->filter(data))return false;
         auto current = new JSONArray();

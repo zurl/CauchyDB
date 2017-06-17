@@ -23,6 +23,7 @@ public:
     int allocBlock(int fid);
     int getBlockCnt(int fid);
     BlockItem * getBlock(int fid, int offset);
+    void synchronize();
 };
 
 #endif //DB_BLOCKSERVICE_H

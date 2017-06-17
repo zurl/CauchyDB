@@ -19,6 +19,19 @@ JSON *InterpreterQueryPlan::runQuery(RecordService *recordService) {
             return JSONMessage(-1, "No Such Database").toJSON();
         }
     }
+    else if(type == "set"){
+        if(value == "noflush"){
+            sqlSession->setFlush(false);
+            return JSONMessage(0, "acknowledged").toJSON();
+        }
+        else if(value == "flush"){
+            sqlSession->setFlush(true);
+            return JSONMessage(0, "acknowledged").toJSON();
+        }
+        else{
+            return JSONMessage(-1, "unknown operation").toJSON();
+        }
+    }
     else if(type == "show"){
         JSONObject * result = new JSONObject();
         result->set("status", 2);
@@ -30,6 +43,10 @@ JSON *InterpreterQueryPlan::runQuery(RecordService *recordService) {
         }
         else if(value == "databases"){
             jarr = sqlSession->getMetaDataService()->getDatabases();
+        }
+        else if(value == "queryplan"){
+            std::cout<<sqlSession->getLastQueryPlan()->toJSON()->toString(true, 2)<<std::endl;
+            return JSONMessage(0, "acknowledged").toJSON();
         }
         else throw SQLExecuteException(5, "unknown operation");
         result->set("data", jarr);

@@ -8,14 +8,20 @@
 
 #include "RecordService.h"
 #include "../SQLSession.h"
+#include "../SQLParser.h"
 
 class InterpreterService {
     RecordService * recordService;
     MetaDataService * metaDataService;
     BlockService * blockService;
 
+    SQLSession * session;
+    SQLParser * parser;
+
 public:
     InterpreterService(RecordService *recordService, MetaDataService *metaDataService, BlockService *blockService);
+
+    void execute(char * buffer);
 
     void start();
 
